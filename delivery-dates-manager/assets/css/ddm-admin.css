@@ -1,0 +1,138 @@
+.ddm-admin-wrap {
+    max-width: 900px;
+}
+
+.ddm-admin-wrap h1 {
+    margin-bottom: 10px;
+}
+
+.ddm-admin-wrap > .description {
+    margin-bottom: 25px;
+    color: #666;
+}
+
+.ddm-zones-accordion {
+    background: #fff;
+    border: 1px solid #ccd0d4;
+    box-shadow: 0 1px 1px rgba(0, 0, 0, 0.04);
+}
+
+.ddm-zone-panel {
+    border-bottom: 1px solid #ccd0d4;
+}
+
+.ddm-zone-panel:last-child {
+    border-bottom: none;
+}
+
+.ddm-zone-header {
+    padding: 15px 20px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    background: #f9f9f9;
+    transition: background 0.2s ease;
+}
+
+.ddm-zone-header:hover {
+    background: #f0f0f0;
+}
+
+.ddm-zone-panel.active .ddm-zone-header {
+    background: #fff;
+    border-bottom: 1px solid #eee;
+}
+
+.ddm-zone-toggle {
+    margin-right: 10px;
+    color: #72777c;
+    transition: transform 0.2s ease;
+}
+
+.ddm-zone-panel.active .ddm-zone-toggle {
+    transform: rotate(90deg);
+}
+
+.ddm-zone-name {
+    flex: 1;
+    font-weight: 600;
+    font-size: 14px;
+    color: #23282d;
+}
+
+.ddm-zone-status {
+    padding: 3px 10px;
+    border-radius: 3px;
+    font-size: 12px;
+    font-weight: 500;
+    text-transform: uppercase;
+}
+
+.ddm-zone-status.active {
+    background: #dff0d8;
+    color: #3c763d;
+}
+
+.ddm-zone-status.inactive {
+    background: #f2dede;
+    color: #a94442;
+}
+
+.ddm-zone-content {
+    padding: 20px;
+    background: #fff;
+}
+
+.ddm-zone-content .form-table {
+    margin: 0;
+}
+
+.ddm-zone-content .form-table th {
+    padding: 15px 10px 15px 0;
+    width: 180px;
+    font-weight: 500;
+}
+
+.ddm-zone-content .form-table td {
+    padding: 15px 10px;
+}
+
+.ddm-zone-content input[type="checkbox"] {
+    margin-right: 8px;
+}
+
+.ddm-zone-content input[type="time"],
+.ddm-zone-content input[type="number"] {
+    width: 150px;
+}
+
+.ddm-zone-content fieldset label {
+    margin-bottom: 5px;
+}
+
+.ddm-notice {
+    padding: 15px 20px;
+    margin: 0;
+}
+
+.ddm-notice-warning {
+    background: #fff3cd;
+    border-left: 4px solid #ffc107;
+}
+
+.ddm-notice-warning p {
+    margin: 0;
+    color: #856404;
+}
+
+.ddm-admin-wrap .submit {
+    margin-top: 20px;
+    padding: 15px 0;
+    border-top: 1px solid #ccd0d4;
+}
+
+.ddm-same-day-options {
+    border-top: 1px solid #eee;
+    margin-top: 10px;
+    padding-top: 10px;
+}
