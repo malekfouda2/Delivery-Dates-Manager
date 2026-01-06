@@ -1,3 +1,19 @@
+.ddm-delivery-section {
+    margin: 30px 0;
+    padding: 20px;
+    background: #f7f7f7;
+    border-radius: 4px;
+    border: 1px solid #ddd;
+}
+
+.ddm-delivery-section h3 {
+    margin: 0 0 20px;
+    padding: 0 0 10px;
+    font-size: 18px;
+    color: #333;
+    border-bottom: 1px solid #ddd;
+}
+
 .ddm-delivery-fields {
     margin: 20px 0;
     padding: 20px;

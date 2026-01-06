@@ -9,8 +9,8 @@ class DDM_Checkout {
         add_filter('woocommerce_states', array($this, 'filter_egypt_states'));
         add_filter('woocommerce_countries', array($this, 'filter_countries'));
         add_filter('woocommerce_default_address_fields', array($this, 'customize_address_fields'));
-        add_filter('woocommerce_checkout_fields', array($this, 'add_delivery_fields'));
         add_filter('woocommerce_checkout_fields', array($this, 'lock_country_state_fields'));
+        add_action('woocommerce_after_order_notes', array($this, 'render_delivery_fields'));
         add_action('woocommerce_checkout_process', array($this, 'validate_delivery_fields'));
         add_action('woocommerce_checkout_process', array($this, 'validate_location_fields'));
         add_action('woocommerce_checkout_update_order_meta', array($this, 'save_delivery_fields'));
@@ -87,44 +87,43 @@ class DDM_Checkout {
         }
     }
     
-    public function add_delivery_fields($fields) {
+    public function render_delivery_fields($checkout) {
         $zones = $this->get_enabled_zones();
-        $zone_options = array('' => __('Select delivery zone', 'delivery-dates-manager'));
         
+        if (empty($zones)) {
+            return;
+        }
+        
+        $zone_options = array('' => __('Select delivery zone', 'delivery-dates-manager'));
         foreach ($zones as $zone_id => $zone_data) {
             $zone_options[$zone_id] = $zone_data['name'];
         }
         
-        $fields['ddm_delivery'] = array(
-            'ddm_delivery_zone' => array(
-                'type' => 'select',
-                'label' => __('Delivery Zone', 'delivery-dates-manager'),
-                'required' => true,
-                'class' => array('form-row-wide', 'ddm-field'),
-                'options' => $zone_options,
-                'priority' => 100,
-            ),
-            'ddm_delivery_date' => array(
-                'type' => 'text',
-                'label' => __('Delivery Date', 'delivery-dates-manager'),
-                'required' => true,
-                'class' => array('form-row-wide', 'ddm-field'),
-                'placeholder' => __('Select delivery date', 'delivery-dates-manager'),
-                'custom_attributes' => array(
-                    'readonly' => 'readonly',
-                ),
-                'priority' => 110,
-            ),
-            'ddm_delivery_type' => array(
-                'type' => 'hidden',
-                'label' => '',
-                'required' => false,
-                'default' => 'standard',
-                'priority' => 120,
-            ),
-        );
+        echo '<div id="ddm_delivery_fields" class="ddm-delivery-section">';
+        echo '<h3>' . esc_html__('Delivery Schedule', 'delivery-dates-manager') . '</h3>';
         
-        return $fields;
+        woocommerce_form_field('ddm_delivery_zone', array(
+            'type' => 'select',
+            'label' => __('Delivery Zone', 'delivery-dates-manager'),
+            'required' => true,
+            'class' => array('form-row-wide', 'ddm-field'),
+            'options' => $zone_options,
+        ), '');
+        
+        woocommerce_form_field('ddm_delivery_date', array(
+            'type' => 'text',
+            'label' => __('Delivery Date', 'delivery-dates-manager'),
+            'required' => true,
+            'class' => array('form-row-wide', 'ddm-field'),
+            'placeholder' => __('Select delivery date', 'delivery-dates-manager'),
+            'custom_attributes' => array(
+                'readonly' => 'readonly',
+            ),
+        ), '');
+        
+        echo '<input type="hidden" name="ddm_delivery_type" id="ddm_delivery_type" value="standard">';
+        
+        echo '</div>';
     }
     
     public function validate_delivery_fields() {
