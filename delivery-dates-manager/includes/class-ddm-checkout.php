@@ -222,6 +222,8 @@ class DDM_Checkout {
         $cutoff_time = isset($zone_settings['cutoff_time']) ? $zone_settings['cutoff_time'] : '14:00';
         $same_day = !empty($zone_settings['same_day']);
         
+        $blocked_dates = DDM_Admin::get_blocked_dates_for_zone($zone_id);
+        
         $timezone = new DateTimeZone(wp_timezone_string());
         $now = new DateTime('now', $timezone);
         $current_day = (int) $now->format('w');
@@ -231,12 +233,14 @@ class DDM_Checkout {
         
         if ($same_day && $is_before_cutoff && $cart_same_day_eligible && in_array($current_day, $allowed_days)) {
             $today = $now->format('Y-m-d');
-            if ($max_orders == 0 || $this->get_orders_count_for_date($zone_id, $today) < $max_orders) {
-                $dates[] = array(
-                    'date' => $today,
-                    'label' => __('Today', 'delivery-dates-manager'),
-                    'type' => 'same_day',
-                );
+            if (!in_array($today, $blocked_dates)) {
+                if ($max_orders == 0 || $this->get_orders_count_for_date($zone_id, $today) < $max_orders) {
+                    $dates[] = array(
+                        'date' => $today,
+                        'label' => __('Today', 'delivery-dates-manager'),
+                        'type' => 'same_day',
+                    );
+                }
             }
         }
         
@@ -251,6 +255,10 @@ class DDM_Checkout {
             $days_checked++;
             
             if (!in_array($day_of_week, $allowed_days)) {
+                continue;
+            }
+            
+            if (in_array($date_string, $blocked_dates)) {
                 continue;
             }
             
@@ -295,6 +303,11 @@ class DDM_Checkout {
         $zone_settings = $settings[$zone_id];
         $allowed_days = isset($zone_settings['allowed_days']) ? $zone_settings['allowed_days'] : array();
         $max_orders = isset($zone_settings['max_orders']) ? intval($zone_settings['max_orders']) : 0;
+        
+        $blocked_dates = DDM_Admin::get_blocked_dates_for_zone($zone_id);
+        if (in_array($date, $blocked_dates)) {
+            return false;
+        }
         
         $timezone = new DateTimeZone(wp_timezone_string());
         $delivery_date = DateTime::createFromFormat('Y-m-d', $date, $timezone);

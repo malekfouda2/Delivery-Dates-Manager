@@ -28,6 +28,29 @@ class DDM_Admin {
             'sanitize_callback' => array($this, 'sanitize_zone_settings'),
             'default' => array()
         ));
+        
+        register_setting('ddm_settings', 'ddm_global_blocked_dates', array(
+            'type' => 'string',
+            'sanitize_callback' => array($this, 'sanitize_blocked_dates'),
+            'default' => ''
+        ));
+    }
+    
+    public function sanitize_blocked_dates($input) {
+        if (empty($input)) {
+            return '';
+        }
+        
+        $dates = array_map('trim', explode(',', $input));
+        $valid_dates = array();
+        
+        foreach ($dates as $date) {
+            if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $date)) {
+                $valid_dates[] = $date;
+            }
+        }
+        
+        return implode(',', $valid_dates);
     }
     
     public function sanitize_zone_settings($input) {
@@ -39,12 +62,19 @@ class DDM_Admin {
         
         foreach ($input as $zone_id => $zone_data) {
             $zone_id = absint($zone_id);
+            
+            $blocked_dates = '';
+            if (isset($zone_data['blocked_dates'])) {
+                $blocked_dates = $this->sanitize_blocked_dates($zone_data['blocked_dates']);
+            }
+            
             $sanitized[$zone_id] = array(
                 'enabled' => !empty($zone_data['enabled']),
                 'allowed_days' => isset($zone_data['allowed_days']) ? array_map('absint', (array)$zone_data['allowed_days']) : array(),
                 'cutoff_time' => isset($zone_data['cutoff_time']) ? sanitize_text_field($zone_data['cutoff_time']) : '14:00',
                 'same_day' => !empty($zone_data['same_day']),
                 'max_orders' => isset($zone_data['max_orders']) ? absint($zone_data['max_orders']) : 0,
+                'blocked_dates' => $blocked_dates,
             );
         }
         
@@ -61,12 +91,18 @@ class DDM_Admin {
         $zone_id = isset($_POST['zone_id']) ? absint($_POST['zone_id']) : 0;
         $settings = get_option('ddm_zone_settings', array());
         
+        $blocked_dates = '';
+        if (isset($_POST['blocked_dates'])) {
+            $blocked_dates = $this->sanitize_blocked_dates($_POST['blocked_dates']);
+        }
+        
         $settings[$zone_id] = array(
             'enabled' => !empty($_POST['enabled']),
             'allowed_days' => isset($_POST['allowed_days']) ? array_map('absint', (array)$_POST['allowed_days']) : array(),
             'cutoff_time' => isset($_POST['cutoff_time']) ? sanitize_text_field($_POST['cutoff_time']) : '14:00',
             'same_day' => !empty($_POST['same_day']),
             'max_orders' => isset($_POST['max_orders']) ? absint($_POST['max_orders']) : 0,
+            'blocked_dates' => $blocked_dates,
         );
         
         update_option('ddm_zone_settings', $settings);
@@ -76,6 +112,7 @@ class DDM_Admin {
     public function render_settings_page() {
         $zones = $this->get_cairo_shipping_zones();
         $settings = get_option('ddm_zone_settings', array());
+        $global_blocked_dates = get_option('ddm_global_blocked_dates', '');
         $days = array(
             0 => __('Sunday', 'delivery-dates-manager'),
             1 => __('Monday', 'delivery-dates-manager'),
@@ -94,6 +131,30 @@ class DDM_Admin {
                 <?php settings_fields('ddm_settings'); ?>
                 <?php wp_nonce_field('ddm_admin_nonce', 'ddm_nonce'); ?>
                 
+                <div class="ddm-global-settings" style="background: #fff; padding: 20px; margin-bottom: 20px; border: 1px solid #ccd0d4; border-radius: 4px;">
+                    <h2 style="margin-top: 0;"><?php esc_html_e('Global Settings', 'delivery-dates-manager'); ?></h2>
+                    <table class="form-table">
+                        <tr>
+                            <th scope="row">
+                                <label for="ddm_global_blocked_dates"><?php esc_html_e('Blocked Dates (All Zones)', 'delivery-dates-manager'); ?></label>
+                            </th>
+                            <td>
+                                <textarea name="ddm_global_blocked_dates" 
+                                          id="ddm_global_blocked_dates" 
+                                          rows="3" 
+                                          cols="50" 
+                                          class="large-text"
+                                          placeholder="2025-12-25, 2025-12-31, 2026-01-01"><?php echo esc_textarea($global_blocked_dates); ?></textarea>
+                                <p class="description">
+                                    <?php esc_html_e('Enter dates that are blocked for ALL delivery zones (holidays, vacations, etc). Use format YYYY-MM-DD, separated by commas.', 'delivery-dates-manager'); ?>
+                                </p>
+                            </td>
+                        </tr>
+                    </table>
+                </div>
+                
+                <h2><?php esc_html_e('Zone Settings', 'delivery-dates-manager'); ?></h2>
+                
                 <div class="ddm-zones-accordion">
                     <?php if (empty($zones)) : ?>
                         <div class="ddm-notice ddm-notice-warning">
@@ -107,6 +168,7 @@ class DDM_Admin {
                             $cutoff_time = isset($zone_settings['cutoff_time']) ? $zone_settings['cutoff_time'] : '14:00';
                             $same_day = !empty($zone_settings['same_day']);
                             $max_orders = isset($zone_settings['max_orders']) ? $zone_settings['max_orders'] : 0;
+                            $zone_blocked_dates = isset($zone_settings['blocked_dates']) ? $zone_settings['blocked_dates'] : '';
                         ?>
                         <div class="ddm-zone-panel <?php echo $is_enabled ? 'ddm-zone-enabled' : ''; ?>">
                             <div class="ddm-zone-header">
@@ -178,6 +240,24 @@ class DDM_Admin {
                                             <p class="description"><?php esc_html_e('Set to 0 for unlimited orders.', 'delivery-dates-manager'); ?></p>
                                         </td>
                                     </tr>
+                                    <tr>
+                                        <th scope="row">
+                                            <label for="zone_blocked_dates_<?php echo esc_attr($zone->get_id()); ?>">
+                                                <?php esc_html_e('Zone Blocked Dates', 'delivery-dates-manager'); ?>
+                                            </label>
+                                        </th>
+                                        <td>
+                                            <textarea name="ddm_zone_settings[<?php echo esc_attr($zone->get_id()); ?>][blocked_dates]" 
+                                                      id="zone_blocked_dates_<?php echo esc_attr($zone->get_id()); ?>" 
+                                                      rows="2" 
+                                                      cols="50" 
+                                                      class="large-text"
+                                                      placeholder="2025-12-25, 2025-12-31"><?php echo esc_textarea($zone_blocked_dates); ?></textarea>
+                                            <p class="description">
+                                                <?php esc_html_e('Enter dates blocked for THIS zone only. Format: YYYY-MM-DD, separated by commas.', 'delivery-dates-manager'); ?>
+                                            </p>
+                                        </td>
+                                    </tr>
                                 </table>
                                 <?php 
                                 $wc_flat_rate = DDM_Shipping::get_wc_zone_flat_rate($zone->get_id());
@@ -228,6 +308,24 @@ class DDM_Admin {
         }
         
         return $cairo_zones;
+    }
+    
+    public static function get_blocked_dates_for_zone($zone_id) {
+        $global_blocked = get_option('ddm_global_blocked_dates', '');
+        $settings = get_option('ddm_zone_settings', array());
+        $zone_blocked = isset($settings[$zone_id]['blocked_dates']) ? $settings[$zone_id]['blocked_dates'] : '';
+        
+        $all_blocked = array();
+        
+        if (!empty($global_blocked)) {
+            $all_blocked = array_merge($all_blocked, array_map('trim', explode(',', $global_blocked)));
+        }
+        
+        if (!empty($zone_blocked)) {
+            $all_blocked = array_merge($all_blocked, array_map('trim', explode(',', $zone_blocked)));
+        }
+        
+        return array_unique($all_blocked);
     }
 }
 
