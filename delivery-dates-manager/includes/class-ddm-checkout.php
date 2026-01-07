@@ -10,7 +10,7 @@ class DDM_Checkout {
         add_filter('woocommerce_countries', array($this, 'filter_countries'));
         add_filter('woocommerce_default_address_fields', array($this, 'customize_address_fields'));
         add_filter('woocommerce_checkout_fields', array($this, 'lock_country_state_fields'));
-        add_action('woocommerce_after_order_notes', array($this, 'render_delivery_fields'));
+        add_filter('woocommerce_checkout_fields', array($this, 'add_delivery_fields'), 20);
         add_action('woocommerce_checkout_process', array($this, 'validate_delivery_fields'));
         add_action('woocommerce_checkout_process', array($this, 'validate_location_fields'));
         add_action('woocommerce_checkout_update_order_meta', array($this, 'save_delivery_fields'));
@@ -87,11 +87,11 @@ class DDM_Checkout {
         }
     }
     
-    public function render_delivery_fields($checkout) {
+    public function add_delivery_fields($fields) {
         $zones = $this->get_enabled_zones();
         
         if (empty($zones)) {
-            return;
+            return $fields;
         }
         
         $zone_options = array('' => __('Select delivery zone', 'delivery-dates-manager'));
@@ -99,18 +99,16 @@ class DDM_Checkout {
             $zone_options[$zone_id] = $zone_data['name'];
         }
         
-        echo '<div id="ddm_delivery_fields" class="ddm-delivery-section">';
-        echo '<h3>' . esc_html__('Delivery Schedule', 'delivery-dates-manager') . '</h3>';
-        
-        woocommerce_form_field('ddm_delivery_zone', array(
+        $fields['billing']['ddm_delivery_zone'] = array(
             'type' => 'select',
             'label' => __('Delivery Zone', 'delivery-dates-manager'),
             'required' => true,
             'class' => array('form-row-wide', 'ddm-field'),
             'options' => $zone_options,
-        ), '');
+            'priority' => 120,
+        );
         
-        woocommerce_form_field('ddm_delivery_date', array(
+        $fields['billing']['ddm_delivery_date'] = array(
             'type' => 'text',
             'label' => __('Delivery Date', 'delivery-dates-manager'),
             'required' => true,
@@ -119,11 +117,18 @@ class DDM_Checkout {
             'custom_attributes' => array(
                 'readonly' => 'readonly',
             ),
-        ), '');
+            'priority' => 130,
+        );
         
-        echo '<input type="hidden" name="ddm_delivery_type" id="ddm_delivery_type" value="standard">';
+        $fields['billing']['ddm_delivery_type'] = array(
+            'type' => 'hidden',
+            'label' => '',
+            'required' => false,
+            'default' => 'standard',
+            'priority' => 140,
+        );
         
-        echo '</div>';
+        return $fields;
     }
     
     public function validate_delivery_fields() {
@@ -182,10 +187,12 @@ class DDM_Checkout {
         $cart_same_day_eligible = DDM_Product::is_cart_same_day_eligible();
         $can_same_day = !empty($zone_settings['same_day']) && $cart_same_day_eligible && $this->is_before_cutoff($zone_settings['cutoff_time']);
         
+        $flat_fee = DDM_Shipping::get_wc_zone_flat_rate($zone_id);
+        
         wp_send_json_success(array(
             'dates' => $available_dates,
             'same_day_available' => $can_same_day,
-            'flat_fee' => floatval($zone_settings['flat_fee']),
+            'flat_fee' => $flat_fee,
         ));
     }
     

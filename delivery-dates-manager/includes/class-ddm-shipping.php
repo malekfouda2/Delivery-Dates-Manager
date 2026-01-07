@@ -24,7 +24,7 @@ class DDM_Shipping {
             return $rates;
         }
         
-        $flat_fee = isset($settings[$zone_id]['flat_fee']) ? floatval($settings[$zone_id]['flat_fee']) : 0;
+        $flat_fee = self::get_wc_zone_flat_rate($zone_id);
         
         foreach ($rates as $rate_key => $rate) {
             $rates[$rate_key]->cost = $flat_fee;
@@ -50,8 +50,7 @@ class DDM_Shipping {
         
         WC()->cart->calculate_totals();
         
-        $settings = get_option('ddm_zone_settings', array());
-        $flat_fee = isset($settings[$zone_id]['flat_fee']) ? floatval($settings[$zone_id]['flat_fee']) : 0;
+        $flat_fee = self::get_wc_zone_flat_rate($zone_id);
         
         wp_send_json_success(array(
             'flat_fee' => $flat_fee,
@@ -69,6 +68,30 @@ class DDM_Shipping {
         return $zone ? $zone->get_zone_name() : '';
     }
     
+    public static function get_wc_zone_flat_rate($zone_id) {
+        if (!class_exists('WC_Shipping_Zones')) {
+            return 0;
+        }
+        
+        $zone = WC_Shipping_Zones::get_zone($zone_id);
+        if (!$zone) {
+            return 0;
+        }
+        
+        $shipping_methods = $zone->get_shipping_methods(true);
+        
+        foreach ($shipping_methods as $method) {
+            if ($method->id === 'flat_rate' && $method->is_enabled()) {
+                $cost = $method->get_option('cost');
+                if ($cost !== '' && $cost !== null) {
+                    return floatval($cost);
+                }
+            }
+        }
+        
+        return 0;
+    }
+    
     public static function get_delivery_fee_for_zone($zone_id) {
         $settings = get_option('ddm_zone_settings', array());
         
@@ -76,7 +99,7 @@ class DDM_Shipping {
             return 0;
         }
         
-        return isset($settings[$zone_id]['flat_fee']) ? floatval($settings[$zone_id]['flat_fee']) : 0;
+        return self::get_wc_zone_flat_rate($zone_id);
     }
 }
 

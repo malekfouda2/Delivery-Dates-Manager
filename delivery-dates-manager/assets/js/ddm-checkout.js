@@ -14,23 +14,11 @@
             this.settings = ddm_checkout.zone_settings || {};
             this.bindEvents();
             this.initDatepicker();
-            this.moveDeliveryFields();
         },
 
         bindEvents: function() {
             $(document).on('change', '#ddm_delivery_zone', this.onZoneChange.bind(this));
             $(document.body).on('updated_checkout', this.onCheckoutUpdate.bind(this));
-        },
-
-        moveDeliveryFields: function() {
-            var $deliveryFields = $('#ddm_delivery_zone_field, #ddm_delivery_date_field, #ddm_delivery_type_field');
-            var $targetLocation = $('#order_review').length ? $('#order_review') : $('.woocommerce-checkout-review-order');
-            
-            if ($deliveryFields.length && $targetLocation.length) {
-                var $wrapper = $('<div class="ddm-delivery-fields"><h3>' + ddm_checkout.i18n.select_zone + '</h3></div>');
-                $deliveryFields.appendTo($wrapper);
-                $wrapper.insertBefore($targetLocation);
-            }
         },
 
         initDatepicker: function() {

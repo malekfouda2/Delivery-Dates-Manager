@@ -45,7 +45,6 @@ class DDM_Admin {
                 'cutoff_time' => isset($zone_data['cutoff_time']) ? sanitize_text_field($zone_data['cutoff_time']) : '14:00',
                 'same_day' => !empty($zone_data['same_day']),
                 'max_orders' => isset($zone_data['max_orders']) ? absint($zone_data['max_orders']) : 0,
-                'flat_fee' => isset($zone_data['flat_fee']) ? floatval($zone_data['flat_fee']) : 0,
             );
         }
         
@@ -68,7 +67,6 @@ class DDM_Admin {
             'cutoff_time' => isset($_POST['cutoff_time']) ? sanitize_text_field($_POST['cutoff_time']) : '14:00',
             'same_day' => !empty($_POST['same_day']),
             'max_orders' => isset($_POST['max_orders']) ? absint($_POST['max_orders']) : 0,
-            'flat_fee' => isset($_POST['flat_fee']) ? floatval($_POST['flat_fee']) : 0,
         );
         
         update_option('ddm_zone_settings', $settings);
@@ -109,7 +107,6 @@ class DDM_Admin {
                             $cutoff_time = isset($zone_settings['cutoff_time']) ? $zone_settings['cutoff_time'] : '14:00';
                             $same_day = !empty($zone_settings['same_day']);
                             $max_orders = isset($zone_settings['max_orders']) ? $zone_settings['max_orders'] : 0;
-                            $flat_fee = isset($zone_settings['flat_fee']) ? $zone_settings['flat_fee'] : 0;
                         ?>
                         <div class="ddm-zone-panel <?php echo $is_enabled ? 'ddm-zone-enabled' : ''; ?>">
                             <div class="ddm-zone-header">
@@ -181,18 +178,21 @@ class DDM_Admin {
                                             <p class="description"><?php esc_html_e('Set to 0 for unlimited orders.', 'delivery-dates-manager'); ?></p>
                                         </td>
                                     </tr>
-                                    <tr>
-                                        <th scope="row"><?php esc_html_e('Flat Delivery Fee', 'delivery-dates-manager'); ?></th>
-                                        <td>
-                                            <input type="number" 
-                                                   name="ddm_zone_settings[<?php echo esc_attr($zone->get_id()); ?>][flat_fee]" 
-                                                   value="<?php echo esc_attr($flat_fee); ?>"
-                                                   min="0"
-                                                   step="0.01">
-                                            <span class="description"><?php echo esc_html(get_woocommerce_currency_symbol()); ?></span>
-                                        </td>
-                                    </tr>
                                 </table>
+                                <?php 
+                                $wc_flat_rate = DDM_Shipping::get_wc_zone_flat_rate($zone->get_id());
+                                if ($wc_flat_rate > 0) : ?>
+                                <p class="description" style="margin-top: 10px; padding: 10px; background: #e7f3fe; border-left: 3px solid #2196F3;">
+                                    <?php printf(
+                                        esc_html__('Delivery fee: %s (from WooCommerce Shipping Settings)', 'delivery-dates-manager'),
+                                        wc_price($wc_flat_rate)
+                                    ); ?>
+                                </p>
+                                <?php else : ?>
+                                <p class="description" style="margin-top: 10px; padding: 10px; background: #fff3cd; border-left: 3px solid #ffc107;">
+                                    <?php esc_html_e('No flat rate shipping method found for this zone. Please add one in WooCommerce > Settings > Shipping.', 'delivery-dates-manager'); ?>
+                                </p>
+                                <?php endif; ?>
                             </div>
                         </div>
                         <?php endforeach; ?>
