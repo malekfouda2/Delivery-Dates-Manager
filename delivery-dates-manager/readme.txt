@@ -1,5 +1,5 @@
 === Delivery Dates Manager ===
-Contributors: customdev
+Contributors: malekfouda
 Tags: woocommerce, delivery, shipping, cairo, scheduling
 Requires at least: 5.8
 Tested up to: 6.4

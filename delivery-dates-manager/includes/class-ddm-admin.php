@@ -302,11 +302,6 @@ class DDM_Admin {
             $cairo_zones[] = $zone;
         }
         
-        $rest_of_world = WC_Shipping_Zones::get_zone(0);
-        if ($rest_of_world) {
-            $cairo_zones[] = $rest_of_world;
-        }
-        
         return $cairo_zones;
     }
     

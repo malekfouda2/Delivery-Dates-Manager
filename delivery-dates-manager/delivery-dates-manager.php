@@ -1,11 +1,11 @@
 <?php
 /**
  * Plugin Name: Delivery Dates Manager
- * Plugin URI: https://example.com/delivery-dates-manager
+ * Plugin URI: https://www.malekfouda.com
  * Description: A powerful delivery scheduling plugin for WooCommerce with Cairo-only shipping zones, same-day delivery options, and flexible date management.
  * Version: 1.0.0
- * Author: Custom Development
- * Author URI: https://example.com
+ * Author: Malek Fouda
+ * Author URI: https://www.malekfouda.com
  * License: GPL v2 or later
  * License URI: https://www.gnu.org/licenses/gpl-2.0.html
  * Text Domain: delivery-dates-manager
@@ -67,9 +67,16 @@ final class Delivery_Dates_Manager {
         add_action('init', array($this, 'load_textdomain'));
         add_action('wp_enqueue_scripts', array($this, 'enqueue_frontend_assets'));
         add_action('admin_enqueue_scripts', array($this, 'enqueue_admin_assets'));
+        add_action('before_woocommerce_init', array($this, 'declare_hpos_compatibility'));
         
         register_activation_hook(__FILE__, array($this, 'activate'));
         register_deactivation_hook(__FILE__, array($this, 'deactivate'));
+    }
+    
+    public function declare_hpos_compatibility() {
+        if (class_exists('\Automattic\WooCommerce\Utilities\FeaturesUtil')) {
+            \Automattic\WooCommerce\Utilities\FeaturesUtil::declare_compatibility('custom_order_tables', __FILE__, true);
+        }
     }
     
     public function load_textdomain() {
