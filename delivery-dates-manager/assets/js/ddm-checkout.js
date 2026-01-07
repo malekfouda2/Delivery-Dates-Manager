@@ -69,7 +69,6 @@
                         $('#ddm_delivery_date').datepicker('refresh');
 
                         self.updateShipping(zoneId);
-                        self.showDeliveryFee(response.data.flat_fee);
 
                         if (response.data.same_day_available) {
                             self.showSameDayBadge();
@@ -140,30 +139,6 @@
                     }
                 }
             });
-        },
-
-        showDeliveryFee: function(fee) {
-            var $notice = $('.ddm-delivery-fee-notice');
-            
-            if (fee > 0) {
-                var formattedFee = this.formatPrice(fee);
-                
-                if ($notice.length) {
-                    $notice.html('<strong>Delivery Fee:</strong> ' + formattedFee);
-                } else {
-                    $('<div class="ddm-delivery-fee-notice"><strong>Delivery Fee:</strong> ' + formattedFee + '</div>')
-                        .insertAfter('#ddm_delivery_date_field');
-                }
-            } else {
-                $notice.remove();
-            }
-        },
-
-        formatPrice: function(price) {
-            if (typeof wc_cart_params !== 'undefined' && wc_cart_params.currency_format_symbol) {
-                return wc_cart_params.currency_format_symbol + parseFloat(price).toFixed(2);
-            }
-            return '$' + parseFloat(price).toFixed(2);
         },
 
         showSameDayBadge: function() {

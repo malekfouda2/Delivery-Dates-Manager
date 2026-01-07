@@ -9,6 +9,7 @@ class DDM_Shipping {
         add_filter('woocommerce_package_rates', array($this, 'modify_shipping_rates'), 100, 2);
         add_action('wp_ajax_ddm_update_shipping', array($this, 'ajax_update_shipping'));
         add_action('wp_ajax_nopriv_ddm_update_shipping', array($this, 'ajax_update_shipping'));
+        add_action('woocommerce_cart_calculate_fees', array($this, 'add_delivery_fee'));
     }
     
     public function modify_shipping_rates($rates, $package) {
@@ -25,16 +26,46 @@ class DDM_Shipping {
         }
         
         $flat_fee = self::get_wc_zone_flat_rate($zone_id);
+        $zone_name = $this->get_zone_name($zone_id);
         
         foreach ($rates as $rate_key => $rate) {
-            $rates[$rate_key]->cost = $flat_fee;
+            $rates[$rate_key]->cost = 0;
             $rates[$rate_key]->label = sprintf(
                 __('Delivery to %s', 'delivery-dates-manager'),
-                $this->get_zone_name($zone_id)
+                $zone_name
             );
         }
         
         return $rates;
+    }
+    
+    public function add_delivery_fee($cart) {
+        if (is_admin() && !defined('DOING_AJAX')) {
+            return;
+        }
+        
+        $zone_id = WC()->session->get('ddm_selected_zone');
+        
+        if (!$zone_id) {
+            return;
+        }
+        
+        $settings = get_option('ddm_zone_settings', array());
+        
+        if (!isset($settings[$zone_id]) || empty($settings[$zone_id]['enabled'])) {
+            return;
+        }
+        
+        $flat_fee = self::get_wc_zone_flat_rate($zone_id);
+        
+        if ($flat_fee > 0) {
+            $zone_name = $this->get_zone_name($zone_id);
+            $cart->add_fee(
+                sprintf(__('Delivery to %s', 'delivery-dates-manager'), $zone_name),
+                $flat_fee,
+                true
+            );
+        }
     }
     
     public function ajax_update_shipping() {
