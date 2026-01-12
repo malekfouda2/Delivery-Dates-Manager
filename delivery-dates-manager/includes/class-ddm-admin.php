@@ -34,6 +34,12 @@ class DDM_Admin {
             'sanitize_callback' => array($this, 'sanitize_blocked_dates'),
             'default' => ''
         ));
+        
+        register_setting('ddm_settings', 'ddm_pickup_message', array(
+            'type' => 'string',
+            'sanitize_callback' => 'sanitize_textarea_field',
+            'default' => 'Pickup from Heliopolis (order will be ready in 24 Hours, please make sure to select pickup date from the date form below)'
+        ));
     }
     
     public function sanitize_blocked_dates($input) {
@@ -113,6 +119,7 @@ class DDM_Admin {
         $zones = $this->get_cairo_shipping_zones();
         $settings = get_option('ddm_zone_settings', array());
         $global_blocked_dates = get_option('ddm_global_blocked_dates', '');
+        $pickup_message = get_option('ddm_pickup_message', 'Pickup from Heliopolis (order will be ready in 24 Hours, please make sure to select pickup date from the date form below)');
         $days = array(
             0 => __('Sunday', 'delivery-dates-manager'),
             1 => __('Monday', 'delivery-dates-manager'),
@@ -147,6 +154,21 @@ class DDM_Admin {
                                           placeholder="2025-12-25, 2025-12-31, 2026-01-01"><?php echo esc_textarea($global_blocked_dates); ?></textarea>
                                 <p class="description">
                                     <?php esc_html_e('Enter dates that are blocked for ALL delivery zones (holidays, vacations, etc). Use format YYYY-MM-DD, separated by commas.', 'delivery-dates-manager'); ?>
+                                </p>
+                            </td>
+                        </tr>
+                        <tr>
+                            <th scope="row">
+                                <label for="ddm_pickup_message"><?php esc_html_e('Pickup Button Label', 'delivery-dates-manager'); ?></label>
+                            </th>
+                            <td>
+                                <textarea name="ddm_pickup_message" 
+                                          id="ddm_pickup_message" 
+                                          rows="3" 
+                                          cols="50" 
+                                          class="large-text"><?php echo esc_textarea($pickup_message); ?></textarea>
+                                <p class="description">
+                                    <?php esc_html_e('This text will be displayed as the label for the Pickup option in checkout.', 'delivery-dates-manager'); ?>
                                 </p>
                             </td>
                         </tr>

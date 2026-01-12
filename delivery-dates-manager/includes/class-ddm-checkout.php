@@ -94,6 +94,8 @@ class DDM_Checkout {
             return $fields;
         }
         
+        $pickup_message = get_option('ddm_pickup_message', __('Pickup from Heliopolis (order will be ready in 24 Hours, please make sure to select pickup date from the date form below)', 'delivery-dates-manager'));
+        
         $fields['billing']['ddm_fulfillment_method'] = array(
             'type' => 'radio',
             'label' => __('Fulfillment Method', 'delivery-dates-manager'),
@@ -101,7 +103,7 @@ class DDM_Checkout {
             'class' => array('form-row-wide', 'ddm-field', 'ddm-fulfillment-field'),
             'options' => array(
                 'delivery' => __('Delivery', 'delivery-dates-manager'),
-                'pickup' => __('Pickup from Heliopolis (order will be ready in 24 Hours, please make sure to select pickup date from the date form below)', 'delivery-dates-manager'),
+                'pickup' => $pickup_message,
             ),
             'default' => 'delivery',
             'priority' => 115,

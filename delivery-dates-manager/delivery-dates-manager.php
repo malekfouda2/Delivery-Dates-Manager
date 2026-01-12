@@ -3,7 +3,7 @@
  * Plugin Name: Delivery Dates Manager
  * Plugin URI: https://www.malekfouda.com
  * Description: A powerful delivery scheduling plugin for WooCommerce with Cairo-only shipping zones, same-day delivery options, and flexible date management.
- * Version: 1.0.2
+ * Version: 1.0.3
  * Author: Malek Fouda
  * Author URI: https://www.malekfouda.com
  * License: GPL v2 or later
@@ -20,7 +20,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('DDM_VERSION', '1.0.2');
+define('DDM_VERSION', '1.0.3');
 define('DDM_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('DDM_PLUGIN_URL', plugin_dir_url(__FILE__));
 define('DDM_PLUGIN_BASENAME', plugin_basename(__FILE__));
