@@ -174,6 +174,24 @@
     }
 }
 
+#ddm_delivery_zone_field {
+    position: relative !important;
+}
+
+#ddm_delivery_zone_field > label {
+    position: static !important;
+    display: block !important;
+    margin: 0 0 8px 0 !important;
+    transform: none !important;
+    background: transparent !important;
+    font-size: 14px !important;
+    font-weight: 600 !important;
+    color: #333 !important;
+    top: auto !important;
+    left: auto !important;
+    padding: 0 !important;
+}
+
 #ddm_delivery_zone,
 #ddm_delivery_zone_field select,
 .woocommerce form #ddm_delivery_zone,
@@ -183,41 +201,88 @@
     line-height: 1.4 !important;
     min-height: 48px !important;
     box-sizing: border-box !important;
+    margin-top: 0 !important;
 }
 
-#ddm_fulfillment_method_field > label {
-    display: block;
-    margin-bottom: 10px;
+#ddm_fulfillment_method_field {
+    margin-bottom: 20px !important;
+}
+
+#ddm_fulfillment_method_field > label:first-child {
+    position: static !important;
+    display: block !important;
+    margin: 0 0 12px 0 !important;
+    transform: none !important;
+    background: transparent !important;
+    font-size: 14px !important;
+    font-weight: 600 !important;
+    color: #333 !important;
+    top: auto !important;
+    left: auto !important;
+    padding: 0 !important;
 }
 
 #ddm_fulfillment_method_field .woocommerce-input-wrapper,
 #ddm_fulfillment_method_field > span {
     display: flex !important;
     flex-direction: row !important;
-    align-items: flex-start !important;
-    gap: 15px !important;
+    align-items: stretch !important;
+    gap: 16px !important;
+    flex-wrap: wrap !important;
 }
 
 #ddm_fulfillment_method_field input[type="radio"] {
-    margin: 3px 8px 0 0 !important;
-    flex-shrink: 0;
+    position: absolute !important;
+    opacity: 0 !important;
+    width: 1px !important;
+    height: 1px !important;
+    margin: 0 !important;
+    padding: 0 !important;
 }
 
-#ddm_fulfillment_method_field label[for^="ddm_fulfillment_method"] {
-    display: inline-flex !important;
-    align-items: flex-start !important;
-    padding: 12px 15px !important;
+#ddm_fulfillment_method_field input[type="radio"] + label {
+    display: flex !important;
+    align-items: center !important;
+    padding: 14px 18px !important;
     background: #f9f9f9 !important;
-    border: 1px solid #ddd !important;
-    border-radius: 4px !important;
+    border: 2px solid #ddd !important;
+    border-radius: 6px !important;
     cursor: pointer !important;
     margin: 0 !important;
-    font-weight: normal !important;
+    font-weight: 500 !important;
+    font-size: 14px !important;
+    line-height: 1.4 !important;
+    transition: all 0.2s ease !important;
+    position: relative !important;
 }
 
-#ddm_fulfillment_method_field label[for^="ddm_fulfillment_method"]:hover {
+#ddm_fulfillment_method_field input[type="radio"] + label:hover {
     background: #f0f0f0 !important;
-    border-color: #ccc !important;
+    border-color: #bbb !important;
+}
+
+#ddm_fulfillment_method_field input[type="radio"]:checked + label {
+    background: #e8f4fc !important;
+    border-color: #0073aa !important;
+    color: #0073aa !important;
+}
+
+#ddm_fulfillment_method_field input[type="radio"]:focus + label {
+    box-shadow: 0 0 0 2px rgba(0, 115, 170, 0.3) !important;
+}
+
+#ddm_delivery_date_field > label {
+    position: static !important;
+    display: block !important;
+    margin: 0 0 8px 0 !important;
+    transform: none !important;
+    background: transparent !important;
+    font-size: 14px !important;
+    font-weight: 600 !important;
+    color: #333 !important;
+    top: auto !important;
+    left: auto !important;
+    padding: 0 !important;
 }
 
 .ui-datepicker .ddm-date-pickup a {
