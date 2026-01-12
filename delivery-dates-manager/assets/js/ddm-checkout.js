@@ -31,29 +31,36 @@
         },
 
         onFulfillmentChange: function(e) {
+            var self = this;
             this.fulfillmentMethod = $(e.target).val();
-            this.toggleZoneField();
             
             $('#ddm_delivery_date').val('');
             this.availableDates = [];
             
+            this.toggleZoneField();
+            
             if (this.fulfillmentMethod === 'pickup') {
                 this.loadPickupDates();
+                $(document.body).trigger('update_checkout');
             } else {
                 var zoneId = $('#ddm_delivery_zone').val();
                 if (zoneId) {
                     this.loadZoneDates(zoneId);
+                } else {
+                    $('#ddm_delivery_date').prop('disabled', true);
+                    $('#ddm_delivery_date').datepicker('refresh');
                 }
+                $(document.body).trigger('update_checkout');
             }
         },
 
         toggleZoneField: function() {
             if (this.fulfillmentMethod === 'pickup') {
                 $('#ddm_delivery_zone_field').hide();
-                $('#ddm_delivery_zone').prop('required', false);
+                $('#ddm_delivery_zone').removeAttr('required');
             } else {
                 $('#ddm_delivery_zone_field').show();
-                $('#ddm_delivery_zone').prop('required', true);
+                $('#ddm_delivery_zone').attr('required', 'required');
             }
         },
 
@@ -82,6 +89,7 @@
 
             if (!zoneId) {
                 $('#ddm_delivery_date').prop('disabled', true);
+                $('#ddm_delivery_date').datepicker('refresh');
                 return;
             }
 
@@ -149,11 +157,13 @@
             }
             
             this.availableDates = dates;
-            $('#ddm_delivery_date').prop('disabled', false);
-            $('#ddm_delivery_date').datepicker('refresh');
             this.hideSameDayBadge();
             
-            $(document.body).trigger('update_checkout');
+            $('#ddm_delivery_date').prop('disabled', false);
+            
+            setTimeout(function() {
+                $('#ddm_delivery_date').datepicker('refresh');
+            }, 100);
         },
 
         isDateAvailable: function(date) {
@@ -224,10 +234,17 @@
         },
 
         onCheckoutUpdate: function() {
-            this.handleInitialState();
-            if (this.selectedZone || this.fulfillmentMethod === 'pickup') {
+            var self = this;
+            
+            setTimeout(function() {
+                self.handleInitialState();
+                
+                if (self.fulfillmentMethod === 'pickup' && self.availableDates.length === 0) {
+                    self.loadPickupDates();
+                }
+                
                 $('#ddm_delivery_date').datepicker('refresh');
-            }
+            }, 100);
         }
     };
 

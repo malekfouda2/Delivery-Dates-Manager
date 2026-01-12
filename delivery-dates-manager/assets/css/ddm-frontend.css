@@ -179,34 +179,45 @@
 }
 
 #ddm_delivery_zone_field select,
-.ddm-zone-field select {
-    padding: 12px 15px;
-    height: auto;
-    line-height: 1.4;
+.ddm-zone-field select,
+#ddm_delivery_zone {
+    padding: 12px 15px !important;
+    height: auto !important;
+    line-height: 1.4 !important;
+    min-height: 48px !important;
 }
 
-.ddm-fulfillment-field label {
-    display: block;
-    margin-bottom: 10px;
-    padding: 12px 15px;
+#ddm_fulfillment_method_field .woocommerce-input-wrapper {
+    display: flex;
+    flex-direction: row;
+    gap: 20px;
+    flex-wrap: wrap;
+}
+
+#ddm_fulfillment_method_field label.radio {
+    display: inline-flex;
+    align-items: center;
+    margin: 0;
+    padding: 10px 15px;
     background: #f9f9f9;
     border: 1px solid #ddd;
     border-radius: 4px;
     cursor: pointer;
     transition: all 0.2s ease;
+    flex: 0 1 auto;
 }
 
-.ddm-fulfillment-field label:hover {
+#ddm_fulfillment_method_field label.radio:hover {
     background: #f0f0f0;
     border-color: #ccc;
 }
 
-.ddm-fulfillment-field input[type="radio"] {
-    margin-right: 10px;
+#ddm_fulfillment_method_field input[type="radio"] {
+    margin-right: 8px;
+    margin-top: 0;
 }
 
-.ddm-fulfillment-field input[type="radio"]:checked + span,
-.ddm-fulfillment-field label:has(input[type="radio"]:checked) {
+#ddm_fulfillment_method_field label.radio:has(input:checked) {
     background: #e8f4fc;
     border-color: #0073aa;
 }
