@@ -174,52 +174,50 @@
     }
 }
 
-.woocommerce form.woocommerce-checkout .form-row select {
-    padding: 1px 0px 0px 10px;
-}
-
+#ddm_delivery_zone,
 #ddm_delivery_zone_field select,
-.ddm-zone-field select,
-#ddm_delivery_zone {
+.woocommerce form #ddm_delivery_zone,
+.woocommerce-checkout #ddm_delivery_zone {
     padding: 12px 15px !important;
     height: auto !important;
     line-height: 1.4 !important;
     min-height: 48px !important;
+    box-sizing: border-box !important;
 }
 
-#ddm_fulfillment_method_field .woocommerce-input-wrapper {
-    display: flex;
-    flex-direction: row;
-    gap: 20px;
-    flex-wrap: wrap;
+#ddm_fulfillment_method_field > label {
+    display: block;
+    margin-bottom: 10px;
 }
 
-#ddm_fulfillment_method_field label.radio {
-    display: inline-flex;
-    align-items: center;
-    margin: 0;
-    padding: 10px 15px;
-    background: #f9f9f9;
-    border: 1px solid #ddd;
-    border-radius: 4px;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    flex: 0 1 auto;
-}
-
-#ddm_fulfillment_method_field label.radio:hover {
-    background: #f0f0f0;
-    border-color: #ccc;
+#ddm_fulfillment_method_field .woocommerce-input-wrapper,
+#ddm_fulfillment_method_field > span {
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: flex-start !important;
+    gap: 15px !important;
 }
 
 #ddm_fulfillment_method_field input[type="radio"] {
-    margin-right: 8px;
-    margin-top: 0;
+    margin: 3px 8px 0 0 !important;
+    flex-shrink: 0;
 }
 
-#ddm_fulfillment_method_field label.radio:has(input:checked) {
-    background: #e8f4fc;
-    border-color: #0073aa;
+#ddm_fulfillment_method_field label[for^="ddm_fulfillment_method"] {
+    display: inline-flex !important;
+    align-items: flex-start !important;
+    padding: 12px 15px !important;
+    background: #f9f9f9 !important;
+    border: 1px solid #ddd !important;
+    border-radius: 4px !important;
+    cursor: pointer !important;
+    margin: 0 !important;
+    font-weight: normal !important;
+}
+
+#ddm_fulfillment_method_field label[for^="ddm_fulfillment_method"]:hover {
+    background: #f0f0f0 !important;
+    border-color: #ccc !important;
 }
 
 .ui-datepicker .ddm-date-pickup a {
