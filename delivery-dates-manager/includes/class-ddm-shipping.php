@@ -9,10 +9,22 @@ class DDM_Shipping {
         add_filter('woocommerce_package_rates', array($this, 'modify_shipping_rates'), 100, 2);
         add_action('wp_ajax_ddm_update_shipping', array($this, 'ajax_update_shipping'));
         add_action('wp_ajax_nopriv_ddm_update_shipping', array($this, 'ajax_update_shipping'));
+        add_action('wp_ajax_ddm_set_fulfillment_method', array($this, 'ajax_set_fulfillment_method'));
+        add_action('wp_ajax_nopriv_ddm_set_fulfillment_method', array($this, 'ajax_set_fulfillment_method'));
         add_action('woocommerce_cart_calculate_fees', array($this, 'add_delivery_fee'));
     }
     
     public function modify_shipping_rates($rates, $package) {
+        $fulfillment_method = WC()->session->get('ddm_fulfillment_method', 'delivery');
+        
+        if ($fulfillment_method === 'pickup') {
+            foreach ($rates as $rate_key => $rate) {
+                $rates[$rate_key]->cost = 0;
+                $rates[$rate_key]->label = __('Pickup', 'delivery-dates-manager');
+            }
+            return $rates;
+        }
+        
         $zone_id = WC()->session->get('ddm_selected_zone');
         
         if (!$zone_id) {
@@ -44,6 +56,12 @@ class DDM_Shipping {
             return;
         }
         
+        $fulfillment_method = WC()->session->get('ddm_fulfillment_method', 'delivery');
+        
+        if ($fulfillment_method === 'pickup') {
+            return;
+        }
+        
         $zone_id = WC()->session->get('ddm_selected_zone');
         
         if (!$zone_id) {
@@ -66,6 +84,29 @@ class DDM_Shipping {
                 true
             );
         }
+    }
+    
+    public function ajax_set_fulfillment_method() {
+        check_ajax_referer('ddm_checkout_nonce', 'nonce');
+        
+        $method = isset($_POST['method']) ? sanitize_text_field($_POST['method']) : 'delivery';
+        
+        if (!in_array($method, array('delivery', 'pickup'))) {
+            $method = 'delivery';
+        }
+        
+        WC()->session->set('ddm_fulfillment_method', $method);
+        
+        if ($method === 'pickup') {
+            WC()->session->set('ddm_selected_zone', null);
+        }
+        
+        WC()->cart->calculate_totals();
+        
+        wp_send_json_success(array(
+            'method' => $method,
+            'cart_total' => WC()->cart->get_total(),
+        ));
     }
     
     public function ajax_update_shipping() {

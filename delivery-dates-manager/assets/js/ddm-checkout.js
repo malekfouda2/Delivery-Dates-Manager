@@ -38,10 +38,10 @@
             this.availableDates = [];
             
             this.toggleZoneField();
+            this.updateFulfillmentMethod(this.fulfillmentMethod);
             
             if (this.fulfillmentMethod === 'pickup') {
                 this.loadPickupDates();
-                $(document.body).trigger('update_checkout');
             } else {
                 var zoneId = $('#ddm_delivery_zone').val();
                 if (zoneId) {
@@ -50,8 +50,24 @@
                     $('#ddm_delivery_date').prop('disabled', true);
                     $('#ddm_delivery_date').datepicker('refresh');
                 }
-                $(document.body).trigger('update_checkout');
             }
+        },
+        
+        updateFulfillmentMethod: function(method) {
+            $.ajax({
+                url: ddm_checkout.ajax_url,
+                type: 'POST',
+                data: {
+                    action: 'ddm_set_fulfillment_method',
+                    method: method,
+                    nonce: ddm_checkout.nonce
+                },
+                success: function(response) {
+                    if (response.success) {
+                        $(document.body).trigger('update_checkout');
+                    }
+                }
+            });
         },
 
         toggleZoneField: function() {
