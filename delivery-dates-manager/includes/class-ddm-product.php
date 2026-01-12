@@ -50,15 +50,23 @@ class DDM_Product {
     
     public static function is_product_same_day_eligible($product_id) {
         $eligible = get_post_meta($product_id, '_ddm_same_day_eligible', true);
+        if ($eligible === '') {
+            return true;
+        }
         return $eligible === 'yes';
     }
     
     public static function is_cart_same_day_eligible() {
         if (!WC()->cart) {
-            return false;
+            return true;
         }
         
-        foreach (WC()->cart->get_cart() as $cart_item) {
+        $cart_contents = WC()->cart->get_cart();
+        if (empty($cart_contents)) {
+            return true;
+        }
+        
+        foreach ($cart_contents as $cart_item) {
             $product_id = $cart_item['variation_id'] ? $cart_item['variation_id'] : $cart_item['product_id'];
             
             if (!self::is_product_same_day_eligible($product_id)) {

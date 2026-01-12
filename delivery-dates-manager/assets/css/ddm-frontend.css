@@ -177,3 +177,41 @@
 .woocommerce form.woocommerce-checkout .form-row select {
     padding: 1px 0px 0px 10px;
 }
+
+#ddm_delivery_zone_field select,
+.ddm-zone-field select {
+    padding: 12px 15px;
+    height: auto;
+    line-height: 1.4;
+}
+
+.ddm-fulfillment-field label {
+    display: block;
+    margin-bottom: 10px;
+    padding: 12px 15px;
+    background: #f9f9f9;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.ddm-fulfillment-field label:hover {
+    background: #f0f0f0;
+    border-color: #ccc;
+}
+
+.ddm-fulfillment-field input[type="radio"] {
+    margin-right: 10px;
+}
+
+.ddm-fulfillment-field input[type="radio"]:checked + span,
+.ddm-fulfillment-field label:has(input[type="radio"]:checked) {
+    background: #e8f4fc;
+    border-color: #0073aa;
+}
+
+.ui-datepicker .ddm-date-pickup a {
+    background: #9c27b0 !important;
+    color: #fff !important;
+}

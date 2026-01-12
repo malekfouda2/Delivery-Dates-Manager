@@ -5,6 +5,7 @@
         settings: {},
         selectedZone: null,
         availableDates: [],
+        fulfillmentMethod: 'delivery',
 
         init: function() {
             if (typeof ddm_checkout === 'undefined') {
@@ -14,11 +15,46 @@
             this.settings = ddm_checkout.zone_settings || {};
             this.bindEvents();
             this.initDatepicker();
+            this.handleInitialState();
         },
 
         bindEvents: function() {
             $(document).on('change', '#ddm_delivery_zone', this.onZoneChange.bind(this));
+            $(document).on('change', 'input[name="ddm_fulfillment_method"]', this.onFulfillmentChange.bind(this));
             $(document.body).on('updated_checkout', this.onCheckoutUpdate.bind(this));
+        },
+
+        handleInitialState: function() {
+            var checkedMethod = $('input[name="ddm_fulfillment_method"]:checked').val();
+            this.fulfillmentMethod = checkedMethod || 'delivery';
+            this.toggleZoneField();
+        },
+
+        onFulfillmentChange: function(e) {
+            this.fulfillmentMethod = $(e.target).val();
+            this.toggleZoneField();
+            
+            $('#ddm_delivery_date').val('');
+            this.availableDates = [];
+            
+            if (this.fulfillmentMethod === 'pickup') {
+                this.loadPickupDates();
+            } else {
+                var zoneId = $('#ddm_delivery_zone').val();
+                if (zoneId) {
+                    this.loadZoneDates(zoneId);
+                }
+            }
+        },
+
+        toggleZoneField: function() {
+            if (this.fulfillmentMethod === 'pickup') {
+                $('#ddm_delivery_zone_field').hide();
+                $('#ddm_delivery_zone').prop('required', false);
+            } else {
+                $('#ddm_delivery_zone_field').show();
+                $('#ddm_delivery_zone').prop('required', true);
+            }
         },
 
         initDatepicker: function() {
@@ -39,8 +75,7 @@
 
         onZoneChange: function(e) {
             var zoneId = $(e.target).val();
-            var self = this;
-
+            
             this.selectedZone = zoneId;
             $('#ddm_delivery_date').val('');
             this.availableDates = [];
@@ -50,6 +85,12 @@
                 return;
             }
 
+            this.loadZoneDates(zoneId);
+        },
+
+        loadZoneDates: function(zoneId) {
+            var self = this;
+            
             $('#ddm_delivery_date_field').addClass('ddm-loading');
 
             $.ajax({
@@ -83,18 +124,49 @@
             });
         },
 
+        loadPickupDates: function() {
+            var self = this;
+            var dates = [];
+            var now = new Date();
+            
+            for (var i = 1; i <= 30; i++) {
+                var date = new Date(now);
+                date.setDate(date.getDate() + i);
+                
+                var dateString = date.getFullYear() + '-' + 
+                    String(date.getMonth() + 1).padStart(2, '0') + '-' + 
+                    String(date.getDate()).padStart(2, '0');
+                
+                var dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+                var monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+                var label = dayNames[date.getDay()] + ', ' + monthNames[date.getMonth()] + ' ' + date.getDate();
+                
+                dates.push({
+                    date: dateString,
+                    label: label,
+                    type: 'pickup'
+                });
+            }
+            
+            this.availableDates = dates;
+            $('#ddm_delivery_date').prop('disabled', false);
+            $('#ddm_delivery_date').datepicker('refresh');
+            this.hideSameDayBadge();
+            
+            $(document.body).trigger('update_checkout');
+        },
+
         isDateAvailable: function(date) {
             var dateString = $.datepicker.formatDate('yy-mm-dd', date);
-            var dayOfWeek = date.getDay();
-            var zoneSettings = this.settings[this.selectedZone];
-
-            if (!zoneSettings) {
-                return [false, 'ddm-date-unavailable', ''];
-            }
 
             for (var i = 0; i < this.availableDates.length; i++) {
                 if (this.availableDates[i].date === dateString) {
-                    var cssClass = this.availableDates[i].type === 'same_day' ? 'ddm-date-sameday' : 'ddm-date-available';
+                    var cssClass = 'ddm-date-available';
+                    if (this.availableDates[i].type === 'same_day') {
+                        cssClass = 'ddm-date-sameday';
+                    } else if (this.availableDates[i].type === 'pickup') {
+                        cssClass = 'ddm-date-pickup';
+                    }
                     return [true, cssClass, this.availableDates[i].label];
                 }
             }
@@ -103,7 +175,6 @@
         },
 
         onDateSelect: function(dateText) {
-            var self = this;
             var selectedDate = null;
 
             for (var i = 0; i < this.availableDates.length; i++) {
@@ -153,7 +224,8 @@
         },
 
         onCheckoutUpdate: function() {
-            if (this.selectedZone) {
+            this.handleInitialState();
+            if (this.selectedZone || this.fulfillmentMethod === 'pickup') {
                 $('#ddm_delivery_date').datepicker('refresh');
             }
         }

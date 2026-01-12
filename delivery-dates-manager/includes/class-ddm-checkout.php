@@ -94,6 +94,19 @@ class DDM_Checkout {
             return $fields;
         }
         
+        $fields['billing']['ddm_fulfillment_method'] = array(
+            'type' => 'radio',
+            'label' => __('Fulfillment Method', 'delivery-dates-manager'),
+            'required' => true,
+            'class' => array('form-row-wide', 'ddm-field', 'ddm-fulfillment-field'),
+            'options' => array(
+                'delivery' => __('Delivery', 'delivery-dates-manager'),
+                'pickup' => __('Pickup from Heliopolis (order will be ready in 24 Hours, please make sure to select pickup date from the date form below)', 'delivery-dates-manager'),
+            ),
+            'default' => 'delivery',
+            'priority' => 115,
+        );
+        
         $zone_options = array('' => __('Select delivery zone', 'delivery-dates-manager'));
         foreach ($zones as $zone_id => $zone_data) {
             $zone_options[$zone_id] = $zone_data['name'];
@@ -103,17 +116,17 @@ class DDM_Checkout {
             'type' => 'select',
             'label' => __('Delivery Zone', 'delivery-dates-manager'),
             'required' => true,
-            'class' => array('form-row-wide', 'ddm-field'),
+            'class' => array('form-row-wide', 'ddm-field', 'ddm-zone-field'),
             'options' => $zone_options,
             'priority' => 120,
         );
         
         $fields['billing']['ddm_delivery_date'] = array(
             'type' => 'text',
-            'label' => __('Delivery Date', 'delivery-dates-manager'),
+            'label' => __('Delivery/Pickup Date', 'delivery-dates-manager'),
             'required' => true,
             'class' => array('form-row-wide', 'ddm-field'),
-            'placeholder' => __('Select delivery date', 'delivery-dates-manager'),
+            'placeholder' => __('Select date', 'delivery-dates-manager'),
             'custom_attributes' => array(
                 'readonly' => 'readonly',
             ),
@@ -132,20 +145,50 @@ class DDM_Checkout {
     }
     
     public function validate_delivery_fields() {
-        if (empty($_POST['ddm_delivery_zone'])) {
-            wc_add_notice(__('Please select a delivery zone.', 'delivery-dates-manager'), 'error');
+        $fulfillment_method = isset($_POST['ddm_fulfillment_method']) ? sanitize_text_field($_POST['ddm_fulfillment_method']) : 'delivery';
+        
+        if ($fulfillment_method === 'delivery') {
+            if (empty($_POST['ddm_delivery_zone'])) {
+                wc_add_notice(__('Please select a delivery zone.', 'delivery-dates-manager'), 'error');
+            }
         }
         
         if (empty($_POST['ddm_delivery_date'])) {
-            wc_add_notice(__('Please select a delivery date.', 'delivery-dates-manager'), 'error');
+            wc_add_notice(__('Please select a date.', 'delivery-dates-manager'), 'error');
         } else {
             $delivery_date = sanitize_text_field($_POST['ddm_delivery_date']);
-            $zone_id = absint($_POST['ddm_delivery_zone']);
             
-            if (!$this->is_date_valid($delivery_date, $zone_id)) {
-                wc_add_notice(__('The selected delivery date is not available. Please choose another date.', 'delivery-dates-manager'), 'error');
+            if ($fulfillment_method === 'delivery') {
+                $zone_id = absint($_POST['ddm_delivery_zone']);
+                if (!$this->is_date_valid($delivery_date, $zone_id)) {
+                    wc_add_notice(__('The selected delivery date is not available. Please choose another date.', 'delivery-dates-manager'), 'error');
+                }
+            } else {
+                if (!$this->is_pickup_date_valid($delivery_date)) {
+                    wc_add_notice(__('The selected pickup date is not available. Please choose another date.', 'delivery-dates-manager'), 'error');
+                }
             }
         }
+    }
+    
+    private function is_pickup_date_valid($date) {
+        $timezone = new DateTimeZone(wp_timezone_string());
+        $pickup_date = DateTime::createFromFormat('Y-m-d', $date, $timezone);
+        
+        if (!$pickup_date) {
+            return false;
+        }
+        
+        $now = new DateTime('now', $timezone);
+        $tomorrow = clone $now;
+        $tomorrow->modify('+1 day');
+        $tomorrow_string = $tomorrow->format('Y-m-d');
+        
+        if ($date < $tomorrow_string) {
+            return false;
+        }
+        
+        return true;
     }
     
     public function save_delivery_fields($order_id) {
@@ -154,19 +197,27 @@ class DDM_Checkout {
             return;
         }
         
-        $zone_id = 0;
+        $fulfillment_method = isset($_POST['ddm_fulfillment_method']) ? sanitize_text_field($_POST['ddm_fulfillment_method']) : 'delivery';
+        $order->update_meta_data('_ddm_fulfillment_method', $fulfillment_method);
         
-        if (!empty($_POST['ddm_delivery_zone'])) {
-            $zone_id = absint($_POST['ddm_delivery_zone']);
-            $order->update_meta_data('_ddm_delivery_zone', $zone_id);
+        if ($fulfillment_method === 'pickup') {
+            $order->update_meta_data('_ddm_delivery_zone_name', __('Pickup - Heliopolis', 'delivery-dates-manager'));
+            $order->update_meta_data('_ddm_delivery_fee', 0);
+        } else {
+            $zone_id = 0;
             
-            $zones = $this->get_enabled_zones();
-            if (isset($zones[$zone_id])) {
-                $order->update_meta_data('_ddm_delivery_zone_name', sanitize_text_field($zones[$zone_id]['name']));
+            if (!empty($_POST['ddm_delivery_zone'])) {
+                $zone_id = absint($_POST['ddm_delivery_zone']);
+                $order->update_meta_data('_ddm_delivery_zone', $zone_id);
+                
+                $zones = $this->get_enabled_zones();
+                if (isset($zones[$zone_id])) {
+                    $order->update_meta_data('_ddm_delivery_zone_name', sanitize_text_field($zones[$zone_id]['name']));
+                }
+                
+                $delivery_fee = DDM_Shipping::get_delivery_fee_for_zone($zone_id);
+                $order->update_meta_data('_ddm_delivery_fee', $delivery_fee);
             }
-            
-            $delivery_fee = DDM_Shipping::get_delivery_fee_for_zone($zone_id);
-            $order->update_meta_data('_ddm_delivery_fee', $delivery_fee);
         }
         
         if (!empty($_POST['ddm_delivery_date'])) {
