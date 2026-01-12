@@ -149,27 +149,34 @@ class DDM_Checkout {
     }
     
     public function save_delivery_fields($order_id) {
+        $order = wc_get_order($order_id);
+        if (!$order) {
+            return;
+        }
+        
         $zone_id = 0;
         
         if (!empty($_POST['ddm_delivery_zone'])) {
             $zone_id = absint($_POST['ddm_delivery_zone']);
-            update_post_meta($order_id, '_ddm_delivery_zone', $zone_id);
+            $order->update_meta_data('_ddm_delivery_zone', $zone_id);
             
             $zones = $this->get_enabled_zones();
             if (isset($zones[$zone_id])) {
-                update_post_meta($order_id, '_ddm_delivery_zone_name', sanitize_text_field($zones[$zone_id]['name']));
+                $order->update_meta_data('_ddm_delivery_zone_name', sanitize_text_field($zones[$zone_id]['name']));
             }
             
             $delivery_fee = DDM_Shipping::get_delivery_fee_for_zone($zone_id);
-            update_post_meta($order_id, '_ddm_delivery_fee', $delivery_fee);
+            $order->update_meta_data('_ddm_delivery_fee', $delivery_fee);
         }
         
         if (!empty($_POST['ddm_delivery_date'])) {
-            update_post_meta($order_id, '_ddm_delivery_date', sanitize_text_field($_POST['ddm_delivery_date']));
+            $order->update_meta_data('_ddm_delivery_date', sanitize_text_field($_POST['ddm_delivery_date']));
         }
         
         $delivery_type = !empty($_POST['ddm_delivery_type']) ? sanitize_text_field($_POST['ddm_delivery_type']) : 'standard';
-        update_post_meta($order_id, '_ddm_delivery_type', $delivery_type);
+        $order->update_meta_data('_ddm_delivery_type', $delivery_type);
+        
+        $order->save();
     }
     
     public function ajax_get_zone_dates() {
@@ -349,23 +356,26 @@ class DDM_Checkout {
     }
     
     private function get_orders_count_for_date($zone_id, $date) {
-        global $wpdb;
-        
-        $count = $wpdb->get_var($wpdb->prepare(
-            "SELECT COUNT(*) FROM {$wpdb->postmeta} pm1
-            INNER JOIN {$wpdb->postmeta} pm2 ON pm1.post_id = pm2.post_id
-            INNER JOIN {$wpdb->posts} p ON pm1.post_id = p.ID
-            WHERE pm1.meta_key = '_ddm_delivery_zone'
-            AND pm1.meta_value = %d
-            AND pm2.meta_key = '_ddm_delivery_date'
-            AND pm2.meta_value = %s
-            AND p.post_type = 'shop_order'
-            AND p.post_status NOT IN ('wc-cancelled', 'wc-failed', 'trash')",
-            $zone_id,
-            $date
+        $orders = wc_get_orders(array(
+            'limit' => -1,
+            'status' => array('wc-pending', 'wc-processing', 'wc-on-hold', 'wc-completed'),
+            'meta_query' => array(
+                'relation' => 'AND',
+                array(
+                    'key' => '_ddm_delivery_zone',
+                    'value' => $zone_id,
+                    'compare' => '=',
+                ),
+                array(
+                    'key' => '_ddm_delivery_date',
+                    'value' => $date,
+                    'compare' => '=',
+                ),
+            ),
+            'return' => 'ids',
         ));
         
-        return absint($count);
+        return count($orders);
     }
     
     private function get_enabled_zones() {

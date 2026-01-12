@@ -10,10 +10,15 @@ class DDM_Order {
         add_action('woocommerce_order_details_after_order_table', array($this, 'display_frontend_order_meta'), 10, 1);
         add_action('woocommerce_email_after_order_table', array($this, 'display_email_order_meta'), 10, 4);
         add_filter('woocommerce_admin_order_preview_get_order_details', array($this, 'add_order_preview_meta'), 10, 2);
+        
         add_action('manage_shop_order_posts_custom_column', array($this, 'add_delivery_column_content'), 20, 2);
         add_filter('manage_edit-shop_order_columns', array($this, 'add_delivery_column'));
         add_filter('manage_edit-shop_order_sortable_columns', array($this, 'make_delivery_column_sortable'));
         add_action('pre_get_posts', array($this, 'sort_by_delivery_date'));
+        
+        add_action('manage_woocommerce_page_wc-orders_custom_column', array($this, 'add_delivery_column_content_hpos'), 20, 2);
+        add_filter('manage_woocommerce_page_wc-orders_columns', array($this, 'add_delivery_column'));
+        add_filter('manage_woocommerce_page_wc-orders_sortable_columns', array($this, 'make_delivery_column_sortable'));
     }
     
     public function display_admin_order_meta($order) {
@@ -190,20 +195,30 @@ class DDM_Order {
     public function add_delivery_column_content($column, $post_id) {
         if ($column === 'ddm_delivery_date') {
             $order = wc_get_order($post_id);
-            if ($order) {
-                $delivery_date = $order->get_meta('_ddm_delivery_date');
-                $zone_name = $order->get_meta('_ddm_delivery_zone_name');
+            $this->render_delivery_column($order);
+        }
+    }
+    
+    public function add_delivery_column_content_hpos($column, $order) {
+        if ($column === 'ddm_delivery_date') {
+            $this->render_delivery_column($order);
+        }
+    }
+    
+    private function render_delivery_column($order) {
+        if ($order) {
+            $delivery_date = $order->get_meta('_ddm_delivery_date');
+            $zone_name = $order->get_meta('_ddm_delivery_zone_name');
+            
+            if ($delivery_date) {
+                $formatted_date = date_i18n(get_option('date_format'), strtotime($delivery_date));
+                echo '<strong>' . esc_html($formatted_date) . '</strong>';
                 
-                if ($delivery_date) {
-                    $formatted_date = date_i18n(get_option('date_format'), strtotime($delivery_date));
-                    echo '<strong>' . esc_html($formatted_date) . '</strong>';
-                    
-                    if ($zone_name) {
-                        echo '<br><small>' . esc_html($zone_name) . '</small>';
-                    }
-                } else {
-                    echo '<span class="na">&ndash;</span>';
+                if ($zone_name) {
+                    echo '<br><small>' . esc_html($zone_name) . '</small>';
                 }
+            } else {
+                echo '<span class="na">&ndash;</span>';
             }
         }
     }
