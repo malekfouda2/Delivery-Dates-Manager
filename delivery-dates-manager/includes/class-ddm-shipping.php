@@ -15,37 +15,50 @@ class DDM_Shipping {
     }
     
     public function modify_shipping_rates($rates, $package) {
+        $settings = get_option('ddm_zone_settings', array());
+        $has_enabled_zones = false;
+        
+        foreach ($settings as $zone_data) {
+            if (!empty($zone_data['enabled'])) {
+                $has_enabled_zones = true;
+                break;
+            }
+        }
+        
+        if (!$has_enabled_zones) {
+            return $rates;
+        }
+        
         $fulfillment_method = WC()->session->get('ddm_fulfillment_method', 'delivery');
         
         if ($fulfillment_method === 'pickup') {
             foreach ($rates as $rate_key => $rate) {
                 $rates[$rate_key]->cost = 0;
                 $rates[$rate_key]->label = __('Pickup', 'delivery-dates-manager');
+                $rates[$rate_key]->taxes = array();
             }
             return $rates;
         }
         
         $zone_id = WC()->session->get('ddm_selected_zone');
         
-        if (!$zone_id) {
-            return $rates;
-        }
-        
-        $settings = get_option('ddm_zone_settings', array());
-        
-        if (!isset($settings[$zone_id]) || empty($settings[$zone_id]['enabled'])) {
-            return $rates;
-        }
-        
-        $flat_fee = self::get_wc_zone_flat_rate($zone_id);
-        $zone_name = $this->get_zone_name($zone_id);
-        
-        foreach ($rates as $rate_key => $rate) {
-            $rates[$rate_key]->cost = 0;
-            $rates[$rate_key]->label = sprintf(
-                __('Delivery to %s', 'delivery-dates-manager'),
-                $zone_name
-            );
+        if ($zone_id && isset($settings[$zone_id]) && !empty($settings[$zone_id]['enabled'])) {
+            $zone_name = $this->get_zone_name($zone_id);
+            
+            foreach ($rates as $rate_key => $rate) {
+                $rates[$rate_key]->cost = 0;
+                $rates[$rate_key]->label = sprintf(
+                    __('Delivery to %s', 'delivery-dates-manager'),
+                    $zone_name
+                );
+                $rates[$rate_key]->taxes = array();
+            }
+        } else {
+            foreach ($rates as $rate_key => $rate) {
+                $rates[$rate_key]->cost = 0;
+                $rates[$rate_key]->label = __('Select delivery zone', 'delivery-dates-manager');
+                $rates[$rate_key]->taxes = array();
+            }
         }
         
         return $rates;
