@@ -115,6 +115,8 @@ class DDM_Shipping {
             WC()->session->set('ddm_selected_zone', null);
         }
         
+        $this->invalidate_shipping_cache();
+        WC()->cart->calculate_shipping();
         WC()->cart->calculate_totals();
         
         wp_send_json_success(array(
@@ -134,6 +136,8 @@ class DDM_Shipping {
             WC()->session->set('ddm_selected_zone', null);
         }
         
+        $this->invalidate_shipping_cache();
+        WC()->cart->calculate_shipping();
         WC()->cart->calculate_totals();
         
         $flat_fee = self::get_wc_zone_flat_rate($zone_id);
@@ -143,6 +147,15 @@ class DDM_Shipping {
             'formatted_fee' => wc_price($flat_fee),
             'cart_total' => WC()->cart->get_total(),
         ));
+    }
+    
+    private function invalidate_shipping_cache() {
+        $packages = WC()->cart->get_shipping_packages();
+        foreach ($packages as $package_key => $package) {
+            $session_key = 'shipping_for_package_' . $package_key;
+            WC()->session->set($session_key, false);
+        }
+        WC()->session->set('shipping_method_counts', array());
     }
     
     private function get_zone_name($zone_id) {
