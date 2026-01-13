@@ -314,6 +314,52 @@ class DDM_Checkout {
         $order->update_meta_data('_ddm_delivery_type', $delivery_type);
         
         $order->save();
+        
+        $this->add_delivery_order_note($order, $fulfillment_method, $delivery_type);
+    }
+    
+    private function add_delivery_order_note($order, $fulfillment_method, $delivery_type) {
+        $zone_name = $order->get_meta('_ddm_delivery_zone_name');
+        $delivery_date = $order->get_meta('_ddm_delivery_date');
+        $delivery_fee = $order->get_meta('_ddm_delivery_fee');
+        
+        if (!$zone_name && !$delivery_date) {
+            return;
+        }
+        
+        if ($delivery_type === 'same_day') {
+            $type_label = __('Same-Day Delivery', 'delivery-dates-manager');
+        } elseif ($delivery_type === 'same_day_pickup') {
+            $type_label = __('Same-Day Pickup', 'delivery-dates-manager');
+        } elseif ($delivery_type === 'pickup') {
+            $type_label = __('Pickup', 'delivery-dates-manager');
+        } else {
+            $type_label = __('Standard Delivery', 'delivery-dates-manager');
+        }
+        
+        $formatted_date = '';
+        if ($delivery_date) {
+            $formatted_date = date_i18n(get_option('date_format'), strtotime($delivery_date));
+        }
+        
+        $note_parts = array();
+        $note_parts[] = '📦 ' . __('DELIVERY DETAILS', 'delivery-dates-manager');
+        
+        if ($zone_name) {
+            $note_parts[] = __('Zone:', 'delivery-dates-manager') . ' ' . $zone_name;
+        }
+        
+        if ($formatted_date) {
+            $note_parts[] = __('Date:', 'delivery-dates-manager') . ' ' . $formatted_date;
+        }
+        
+        $note_parts[] = __('Type:', 'delivery-dates-manager') . ' ' . $type_label;
+        
+        if ($delivery_fee !== '' && $fulfillment_method !== 'pickup') {
+            $note_parts[] = __('Fee:', 'delivery-dates-manager') . ' ' . strip_tags(wc_price($delivery_fee));
+        }
+        
+        $order->add_order_note(implode("\n", $note_parts), false, false);
     }
     
     public function ajax_get_zone_dates() {
