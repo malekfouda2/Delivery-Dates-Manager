@@ -183,6 +183,11 @@ class DDM_Checkout {
             return false;
         }
         
+        $blocked_dates = $this->get_global_blocked_dates();
+        if (in_array($date, $blocked_dates)) {
+            return false;
+        }
+        
         $now = new DateTime('now', $timezone);
         $today = $now->format('Y-m-d');
         
@@ -196,11 +201,7 @@ class DDM_Checkout {
             return true;
         }
         
-        $tomorrow = clone $now;
-        $tomorrow->modify('+1 day');
-        $tomorrow_string = $tomorrow->format('Y-m-d');
-        
-        if ($date < $tomorrow_string && $date !== $today) {
+        if ($date < $today) {
             return false;
         }
         

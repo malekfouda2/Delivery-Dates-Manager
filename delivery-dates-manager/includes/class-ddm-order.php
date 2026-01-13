@@ -41,7 +41,15 @@ class DDM_Order {
             }
             
             if ($delivery_type) {
-                $type_label = $delivery_type === 'same_day' ? __('Same-Day Delivery', 'delivery-dates-manager') : __('Standard Delivery', 'delivery-dates-manager');
+                if ($delivery_type === 'same_day') {
+                    $type_label = __('Same-Day Delivery', 'delivery-dates-manager');
+                } elseif ($delivery_type === 'same_day_pickup') {
+                    $type_label = __('Same-Day Pickup', 'delivery-dates-manager');
+                } elseif ($delivery_type === 'pickup') {
+                    $type_label = __('Pickup', 'delivery-dates-manager');
+                } else {
+                    $type_label = __('Standard Delivery', 'delivery-dates-manager');
+                }
                 echo '<p><strong>' . esc_html__('Delivery Type:', 'delivery-dates-manager') . '</strong> ' . esc_html($type_label) . '</p>';
             }
             
@@ -80,7 +88,15 @@ class DDM_Order {
             }
             
             if ($delivery_type) {
-                $type_label = $delivery_type === 'same_day' ? __('Same-Day Delivery', 'delivery-dates-manager') : __('Standard Delivery', 'delivery-dates-manager');
+                if ($delivery_type === 'same_day') {
+                    $type_label = __('Same-Day Delivery', 'delivery-dates-manager');
+                } elseif ($delivery_type === 'same_day_pickup') {
+                    $type_label = __('Same-Day Pickup', 'delivery-dates-manager');
+                } elseif ($delivery_type === 'pickup') {
+                    $type_label = __('Pickup', 'delivery-dates-manager');
+                } else {
+                    $type_label = __('Standard Delivery', 'delivery-dates-manager');
+                }
                 echo '<tr>';
                 echo '<th>' . esc_html__('Delivery Type', 'delivery-dates-manager') . '</th>';
                 echo '<td>' . esc_html($type_label) . '</td>';
@@ -122,7 +138,15 @@ class DDM_Order {
             }
             
             if ($delivery_type) {
-                $type_label = $delivery_type === 'same_day' ? __('Same-Day Delivery', 'delivery-dates-manager') : __('Standard Delivery', 'delivery-dates-manager');
+                if ($delivery_type === 'same_day') {
+                    $type_label = __('Same-Day Delivery', 'delivery-dates-manager');
+                } elseif ($delivery_type === 'same_day_pickup') {
+                    $type_label = __('Same-Day Pickup', 'delivery-dates-manager');
+                } elseif ($delivery_type === 'pickup') {
+                    $type_label = __('Pickup', 'delivery-dates-manager');
+                } else {
+                    $type_label = __('Standard Delivery', 'delivery-dates-manager');
+                }
                 echo esc_html__('Delivery Type:', 'delivery-dates-manager') . ' ' . esc_html($type_label) . "\n";
             }
             
@@ -148,7 +172,15 @@ class DDM_Order {
             }
             
             if ($delivery_type) {
-                $type_label = $delivery_type === 'same_day' ? __('Same-Day Delivery', 'delivery-dates-manager') : __('Standard Delivery', 'delivery-dates-manager');
+                if ($delivery_type === 'same_day') {
+                    $type_label = __('Same-Day Delivery', 'delivery-dates-manager');
+                } elseif ($delivery_type === 'same_day_pickup') {
+                    $type_label = __('Same-Day Pickup', 'delivery-dates-manager');
+                } elseif ($delivery_type === 'pickup') {
+                    $type_label = __('Pickup', 'delivery-dates-manager');
+                } else {
+                    $type_label = __('Standard Delivery', 'delivery-dates-manager');
+                }
                 echo '<tr><td style="padding: 6px 0; border: none;"><strong>' . esc_html__('Delivery Type:', 'delivery-dates-manager') . '</strong></td>';
                 echo '<td style="padding: 6px 0; border: none;">' . esc_html($type_label) . '</td></tr>';
             }
