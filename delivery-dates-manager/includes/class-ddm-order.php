@@ -19,6 +19,47 @@ class DDM_Order {
         add_action('manage_woocommerce_page_wc-orders_custom_column', array($this, 'add_delivery_column_content_hpos'), 20, 2);
         add_filter('manage_woocommerce_page_wc-orders_columns', array($this, 'add_delivery_column'));
         add_filter('manage_woocommerce_page_wc-orders_sortable_columns', array($this, 'make_delivery_column_sortable'));
+        
+        add_filter('woocommerce_rest_prepare_shop_order_object', array($this, 'add_delivery_data_to_rest_api'), 10, 3);
+    }
+    
+    public function add_delivery_data_to_rest_api($response, $order, $request) {
+        $data = $response->get_data();
+        
+        $fulfillment_method = $order->get_meta('_ddm_fulfillment_method');
+        $zone_name = $order->get_meta('_ddm_delivery_zone_name');
+        $delivery_date = $order->get_meta('_ddm_delivery_date');
+        $delivery_type = $order->get_meta('_ddm_delivery_type');
+        $delivery_fee = $order->get_meta('_ddm_delivery_fee');
+        
+        if ($delivery_type === 'same_day') {
+            $type_label = 'Same-Day Delivery';
+        } elseif ($delivery_type === 'same_day_pickup') {
+            $type_label = 'Same-Day Pickup';
+        } elseif ($delivery_type === 'pickup') {
+            $type_label = 'Pickup';
+        } else {
+            $type_label = 'Standard Delivery';
+        }
+        
+        $formatted_date = '';
+        if ($delivery_date) {
+            $formatted_date = date_i18n(get_option('date_format'), strtotime($delivery_date));
+        }
+        
+        $data['ddm_delivery_details'] = array(
+            'fulfillment_method' => $fulfillment_method ? $fulfillment_method : '',
+            'zone_name' => $zone_name ? $zone_name : '',
+            'delivery_date' => $delivery_date ? $delivery_date : '',
+            'delivery_date_formatted' => $formatted_date,
+            'delivery_type' => $delivery_type ? $delivery_type : '',
+            'delivery_type_label' => $type_label,
+            'delivery_fee' => $delivery_fee !== '' ? floatval($delivery_fee) : 0,
+        );
+        
+        $response->set_data($data);
+        
+        return $response;
     }
     
     public function display_admin_order_meta($order) {
