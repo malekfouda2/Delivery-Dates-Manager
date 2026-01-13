@@ -10,3 +10,5 @@ Thumbs.db
 *.log
 node_modules
 .env
+attached_assets/
+delivery-dates-manager/DEVELOPER.md
