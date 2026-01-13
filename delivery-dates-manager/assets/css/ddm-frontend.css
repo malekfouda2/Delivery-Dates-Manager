@@ -299,24 +299,54 @@
     background: #ff5722 !important;
 }
 
-@media screen and (max-width: 600px) {
+#ddm_fulfillment_method_field {
+    max-width: 100% !important;
+    overflow: hidden !important;
+    box-sizing: border-box !important;
+}
+
+#ddm_fulfillment_method_field .woocommerce-input-wrapper,
+#ddm_fulfillment_method_field > span {
+    max-width: 100% !important;
+    overflow: hidden !important;
+    box-sizing: border-box !important;
+}
+
+#ddm_fulfillment_method_field input[type="radio"] + label {
+    max-width: 100% !important;
+    overflow: hidden !important;
+    box-sizing: border-box !important;
+    white-space: nowrap !important;
+    text-overflow: ellipsis !important;
+    flex-shrink: 1 !important;
+    min-width: 0 !important;
+}
+
+@media screen and (max-width: 768px) {
     .ddm-delivery-section {
-        padding: 15px;
-        margin: 20px 0;
+        padding: 15px !important;
+        margin: 20px 0 !important;
+        max-width: 100% !important;
+        overflow: hidden !important;
+        box-sizing: border-box !important;
     }
     
     #ddm_fulfillment_method_field .woocommerce-input-wrapper,
     #ddm_fulfillment_method_field > span {
         flex-direction: column !important;
         gap: 10px !important;
+        width: 100% !important;
+        max-width: 100% !important;
     }
     
     #ddm_fulfillment_method_field input[type="radio"] + label {
         width: 100% !important;
+        max-width: 100% !important;
         box-sizing: border-box !important;
         padding: 12px 14px !important;
-        font-size: 13px !important;
+        font-size: 14px !important;
         justify-content: center !important;
+        flex: none !important;
     }
     
     .ddm-same-day-badge,
@@ -327,10 +357,15 @@
     }
     
     .ddm-delivery-fields {
-        padding: 15px;
+        padding: 15px !important;
+        max-width: 100% !important;
+        overflow: hidden !important;
+        box-sizing: border-box !important;
     }
     
     #ddm_delivery_date {
         font-size: 14px !important;
+        max-width: 100% !important;
+        box-sizing: border-box !important;
     }
 }
