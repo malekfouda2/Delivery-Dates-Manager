@@ -1,0 +1,12 @@
+.replit
+replit.nix
+.cache
+.config
+.upm
+__pycache__
+*.pyc
+.DS_Store
+Thumbs.db
+*.log
+node_modules
+.env
