@@ -289,3 +289,12 @@
     background: #9c27b0 !important;
     color: #fff !important;
 }
+
+.ui-datepicker .ddm-date-sameday-pickup a {
+    background: #ff5722 !important;
+    color: #fff !important;
+}
+
+.ddm-same-day-pickup-badge {
+    background: #ff5722 !important;
+}

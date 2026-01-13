@@ -24,21 +24,40 @@ class DDM_Product {
             'desc_tip' => true,
         ));
         
+        woocommerce_wp_checkbox(array(
+            'id' => '_ddm_same_day_pickup_eligible',
+            'label' => __('Same-Day Pickup', 'delivery-dates-manager'),
+            'description' => __('Check if this product is eligible for same-day pickup', 'delivery-dates-manager'),
+            'desc_tip' => true,
+        ));
+        
         echo '</div>';
     }
     
     public function save_same_day_field($post_id) {
         $same_day_eligible = isset($_POST['_ddm_same_day_eligible']) ? 'yes' : 'no';
         update_post_meta($post_id, '_ddm_same_day_eligible', $same_day_eligible);
+        
+        $same_day_pickup_eligible = isset($_POST['_ddm_same_day_pickup_eligible']) ? 'yes' : 'no';
+        update_post_meta($post_id, '_ddm_same_day_pickup_eligible', $same_day_pickup_eligible);
     }
     
     public function add_variation_same_day_field($loop, $variation_data, $variation) {
         woocommerce_wp_checkbox(array(
             'id' => '_ddm_same_day_eligible_' . $variation->ID,
             'name' => '_ddm_same_day_eligible_variation[' . $loop . ']',
-            'label' => __('Same-Day Eligible', 'delivery-dates-manager'),
+            'label' => __('Same-Day Delivery', 'delivery-dates-manager'),
             'description' => __('Eligible for same-day delivery', 'delivery-dates-manager'),
             'value' => get_post_meta($variation->ID, '_ddm_same_day_eligible', true),
+            'wrapper_class' => 'form-row',
+        ));
+        
+        woocommerce_wp_checkbox(array(
+            'id' => '_ddm_same_day_pickup_eligible_' . $variation->ID,
+            'name' => '_ddm_same_day_pickup_eligible_variation[' . $loop . ']',
+            'label' => __('Same-Day Pickup', 'delivery-dates-manager'),
+            'description' => __('Eligible for same-day pickup', 'delivery-dates-manager'),
+            'value' => get_post_meta($variation->ID, '_ddm_same_day_pickup_eligible', true),
             'wrapper_class' => 'form-row',
         ));
     }
@@ -46,6 +65,9 @@ class DDM_Product {
     public function save_variation_same_day_field($variation_id, $loop) {
         $same_day_eligible = isset($_POST['_ddm_same_day_eligible_variation'][$loop]) ? 'yes' : 'no';
         update_post_meta($variation_id, '_ddm_same_day_eligible', $same_day_eligible);
+        
+        $same_day_pickup_eligible = isset($_POST['_ddm_same_day_pickup_eligible_variation'][$loop]) ? 'yes' : 'no';
+        update_post_meta($variation_id, '_ddm_same_day_pickup_eligible', $same_day_pickup_eligible);
     }
     
     public static function is_product_same_day_eligible($product_id) {
@@ -70,6 +92,35 @@ class DDM_Product {
             $product_id = $cart_item['variation_id'] ? $cart_item['variation_id'] : $cart_item['product_id'];
             
             if (!self::is_product_same_day_eligible($product_id)) {
+                return false;
+            }
+        }
+        
+        return true;
+    }
+    
+    public static function is_product_same_day_pickup_eligible($product_id) {
+        $eligible = get_post_meta($product_id, '_ddm_same_day_pickup_eligible', true);
+        if ($eligible === '') {
+            return true;
+        }
+        return $eligible === 'yes';
+    }
+    
+    public static function is_cart_same_day_pickup_eligible() {
+        if (!WC()->cart) {
+            return true;
+        }
+        
+        $cart_contents = WC()->cart->get_cart();
+        if (empty($cart_contents)) {
+            return true;
+        }
+        
+        foreach ($cart_contents as $cart_item) {
+            $product_id = $cart_item['variation_id'] ? $cart_item['variation_id'] : $cart_item['product_id'];
+            
+            if (!self::is_product_same_day_pickup_eligible($product_id)) {
                 return false;
             }
         }

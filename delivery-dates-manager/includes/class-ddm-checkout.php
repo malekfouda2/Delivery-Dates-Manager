@@ -18,6 +18,8 @@ class DDM_Checkout {
         add_action('wp_ajax_nopriv_ddm_get_zone_dates', array($this, 'ajax_get_zone_dates'));
         add_action('wp_ajax_ddm_check_date_availability', array($this, 'ajax_check_date_availability'));
         add_action('wp_ajax_nopriv_ddm_check_date_availability', array($this, 'ajax_check_date_availability'));
+        add_action('wp_ajax_ddm_get_pickup_dates', array($this, 'ajax_get_pickup_dates'));
+        add_action('wp_ajax_nopriv_ddm_get_pickup_dates', array($this, 'ajax_get_pickup_dates'));
         add_filter('woocommerce_billing_fields', array($this, 'force_egypt_country'));
     }
     
@@ -182,15 +184,96 @@ class DDM_Checkout {
         }
         
         $now = new DateTime('now', $timezone);
+        $today = $now->format('Y-m-d');
+        
+        if ($date === $today) {
+            $cutoff_time = get_option('ddm_pickup_cutoff_time', '14:00');
+            $cart_same_day_pickup_eligible = DDM_Product::is_cart_same_day_pickup_eligible();
+            
+            if (!$this->is_before_cutoff($cutoff_time) || !$cart_same_day_pickup_eligible) {
+                return false;
+            }
+            return true;
+        }
+        
         $tomorrow = clone $now;
         $tomorrow->modify('+1 day');
         $tomorrow_string = $tomorrow->format('Y-m-d');
         
-        if ($date < $tomorrow_string) {
+        if ($date < $tomorrow_string && $date !== $today) {
             return false;
         }
         
         return true;
+    }
+    
+    public function ajax_get_pickup_dates() {
+        check_ajax_referer('ddm_checkout_nonce', 'nonce');
+        
+        $pickup_dates = $this->calculate_pickup_dates();
+        $cart_same_day_pickup_eligible = DDM_Product::is_cart_same_day_pickup_eligible();
+        $cutoff_time = get_option('ddm_pickup_cutoff_time', '14:00');
+        $can_same_day = $cart_same_day_pickup_eligible && $this->is_before_cutoff($cutoff_time);
+        
+        wp_send_json_success(array(
+            'dates' => $pickup_dates,
+            'same_day_available' => $can_same_day,
+        ));
+    }
+    
+    private function calculate_pickup_dates() {
+        $dates = array();
+        $blocked_dates = $this->get_global_blocked_dates();
+        
+        $timezone = new DateTimeZone(wp_timezone_string());
+        $now = new DateTime('now', $timezone);
+        
+        $cutoff_time = get_option('ddm_pickup_cutoff_time', '14:00');
+        $is_before_cutoff = $this->is_before_cutoff($cutoff_time);
+        $cart_same_day_pickup_eligible = DDM_Product::is_cart_same_day_pickup_eligible();
+        
+        if ($is_before_cutoff && $cart_same_day_pickup_eligible) {
+            $today = $now->format('Y-m-d');
+            if (!in_array($today, $blocked_dates)) {
+                $dates[] = array(
+                    'date' => $today,
+                    'label' => __('Today', 'delivery-dates-manager'),
+                    'type' => 'same_day_pickup',
+                );
+            }
+        }
+        
+        $check_date = clone $now;
+        $days_checked = 0;
+        $max_days = 30;
+        
+        while (count($dates) < 14 && $days_checked < $max_days) {
+            $check_date->modify('+1 day');
+            $date_string = $check_date->format('Y-m-d');
+            $days_checked++;
+            
+            if (in_array($date_string, $blocked_dates)) {
+                continue;
+            }
+            
+            $dates[] = array(
+                'date' => $date_string,
+                'label' => $check_date->format('D, M j'),
+                'type' => 'pickup',
+            );
+        }
+        
+        return $dates;
+    }
+    
+    private function get_global_blocked_dates() {
+        $global_blocked = get_option('ddm_global_blocked_dates', '');
+        
+        if (empty($global_blocked)) {
+            return array();
+        }
+        
+        return array_map('trim', explode(',', $global_blocked));
     }
     
     public function save_delivery_fields($order_id) {

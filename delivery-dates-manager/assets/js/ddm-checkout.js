@@ -150,36 +150,35 @@
 
         loadPickupDates: function() {
             var self = this;
-            var dates = [];
-            var now = new Date();
             
-            for (var i = 1; i <= 30; i++) {
-                var date = new Date(now);
-                date.setDate(date.getDate() + i);
-                
-                var dateString = date.getFullYear() + '-' + 
-                    String(date.getMonth() + 1).padStart(2, '0') + '-' + 
-                    String(date.getDate()).padStart(2, '0');
-                
-                var dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-                var monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-                var label = dayNames[date.getDay()] + ', ' + monthNames[date.getMonth()] + ' ' + date.getDate();
-                
-                dates.push({
-                    date: dateString,
-                    label: label,
-                    type: 'pickup'
-                });
-            }
+            $('#ddm_delivery_date_field').addClass('ddm-loading');
             
-            this.availableDates = dates;
-            this.hideSameDayBadge();
-            
-            $('#ddm_delivery_date').prop('disabled', false);
-            
-            setTimeout(function() {
-                $('#ddm_delivery_date').datepicker('refresh');
-            }, 100);
+            $.ajax({
+                url: ddm_checkout.ajax_url,
+                type: 'POST',
+                data: {
+                    action: 'ddm_get_pickup_dates',
+                    nonce: ddm_checkout.nonce
+                },
+                success: function(response) {
+                    $('#ddm_delivery_date_field').removeClass('ddm-loading');
+                    
+                    if (response.success) {
+                        self.availableDates = response.data.dates;
+                        $('#ddm_delivery_date').prop('disabled', false);
+                        $('#ddm_delivery_date').datepicker('refresh');
+                        
+                        if (response.data.same_day_available) {
+                            self.showSameDayPickupBadge();
+                        } else {
+                            self.hideSameDayBadge();
+                        }
+                    }
+                },
+                error: function() {
+                    $('#ddm_delivery_date_field').removeClass('ddm-loading');
+                }
+            });
         },
 
         isDateAvailable: function(date) {
@@ -190,6 +189,8 @@
                     var cssClass = 'ddm-date-available';
                     if (this.availableDates[i].type === 'same_day') {
                         cssClass = 'ddm-date-sameday';
+                    } else if (this.availableDates[i].type === 'same_day_pickup') {
+                        cssClass = 'ddm-date-sameday-pickup';
                     } else if (this.availableDates[i].type === 'pickup') {
                         cssClass = 'ddm-date-pickup';
                     }
@@ -247,6 +248,14 @@
 
         hideSameDayBadge: function() {
             $('.ddm-same-day-badge').remove();
+        },
+        
+        showSameDayPickupBadge: function() {
+            this.hideSameDayBadge();
+            if (!$('.ddm-same-day-badge').length) {
+                $('<span class="ddm-same-day-badge ddm-same-day-pickup-badge">Same-Day Pickup Available</span>')
+                    .appendTo('#ddm_delivery_date_field label');
+            }
         },
 
         onCheckoutUpdate: function() {
