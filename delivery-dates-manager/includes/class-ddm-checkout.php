@@ -438,11 +438,17 @@ class DDM_Checkout {
         $days_checked = 0;
         $max_days = 60;
         
+        $tomorrow = (clone $now)->modify('+1 day')->format('Y-m-d');
+        
         while (count($dates) < 14 && $days_checked < $max_days) {
             $check_date->modify('+1 day');
             $day_of_week = (int) $check_date->format('w');
             $date_string = $check_date->format('Y-m-d');
             $days_checked++;
+            
+            if ($date_string === $tomorrow && !$is_before_cutoff) {
+                continue;
+            }
             
             if (!in_array($day_of_week, $allowed_days)) {
                 continue;
@@ -513,14 +519,21 @@ class DDM_Checkout {
             return false;
         }
         
+        $cutoff_time = isset($zone_settings['cutoff_time']) ? $zone_settings['cutoff_time'] : '14:00';
+        $is_before_cutoff = $this->is_before_cutoff($cutoff_time);
+        
         if ($date === $today) {
-            $cutoff_time = isset($zone_settings['cutoff_time']) ? $zone_settings['cutoff_time'] : '14:00';
             $same_day = !empty($zone_settings['same_day']);
             $cart_same_day_eligible = DDM_Product::is_cart_same_day_eligible();
             
-            if (!$same_day || !$this->is_before_cutoff($cutoff_time) || !$cart_same_day_eligible) {
+            if (!$same_day || !$is_before_cutoff || !$cart_same_day_eligible) {
                 return false;
             }
+        }
+        
+        $tomorrow = (clone $now)->modify('+1 day')->format('Y-m-d');
+        if ($date === $tomorrow && !$is_before_cutoff) {
+            return false;
         }
         
         $day_of_week = (int) $delivery_date->format('w');
