@@ -306,6 +306,11 @@ class DDM_Order {
             return;
         }
         
+        $post_type = $query->get('post_type');
+        if ($post_type !== 'shop_order') {
+            return;
+        }
+        
         if ($query->get('orderby') === 'ddm_delivery_date') {
             $query->set('meta_key', '_ddm_delivery_date');
             $query->set('orderby', 'meta_value');
