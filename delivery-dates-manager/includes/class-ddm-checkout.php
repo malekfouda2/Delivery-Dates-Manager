@@ -354,44 +354,48 @@ class DDM_Checkout {
     }
     
     public function save_delivery_fields($order_id) {
-        $order = wc_get_order($order_id);
-        if (!$order) {
-            return;
-        }
-        
-        $fulfillment_method = $this->get_fulfillment_method_from_request();
-        $order->update_meta_data('_ddm_fulfillment_method', $fulfillment_method);
-        
-        if ($fulfillment_method === 'pickup') {
-            $order->update_meta_data('_ddm_delivery_zone_name', __('Pickup - Heliopolis', 'delivery-dates-manager'));
-            $order->update_meta_data('_ddm_delivery_fee', 0);
-        } else {
-            $zone_id = $this->get_delivery_zone_from_request();
-            
-            if ($zone_id) {
-                $order->update_meta_data('_ddm_delivery_zone', $zone_id);
-                
-                $zones = $this->get_enabled_zones();
-                if (isset($zones[$zone_id])) {
-                    $order->update_meta_data('_ddm_delivery_zone_name', sanitize_text_field($zones[$zone_id]['name']));
-                }
-                
-                $delivery_fee = DDM_Shipping::get_delivery_fee_for_zone($zone_id);
-                $order->update_meta_data('_ddm_delivery_fee', $delivery_fee);
+        try {
+            $order = wc_get_order($order_id);
+            if (!$order) {
+                return;
             }
+            
+            $fulfillment_method = $this->get_fulfillment_method_from_request();
+            $order->update_meta_data('_ddm_fulfillment_method', $fulfillment_method);
+            
+            if ($fulfillment_method === 'pickup') {
+                $order->update_meta_data('_ddm_delivery_zone_name', __('Pickup - Heliopolis', 'delivery-dates-manager'));
+                $order->update_meta_data('_ddm_delivery_fee', 0);
+            } else {
+                $zone_id = $this->get_delivery_zone_from_request();
+                
+                if ($zone_id) {
+                    $order->update_meta_data('_ddm_delivery_zone', $zone_id);
+                    
+                    $zones = $this->get_enabled_zones();
+                    if (isset($zones[$zone_id])) {
+                        $order->update_meta_data('_ddm_delivery_zone_name', sanitize_text_field($zones[$zone_id]['name']));
+                    }
+                    
+                    $delivery_fee = DDM_Shipping::get_delivery_fee_for_zone($zone_id);
+                    $order->update_meta_data('_ddm_delivery_fee', $delivery_fee);
+                }
+            }
+            
+            $delivery_date = $this->get_delivery_date_from_request();
+            if (!empty($delivery_date)) {
+                $order->update_meta_data('_ddm_delivery_date', $delivery_date);
+            }
+            
+            $delivery_type = !empty($_POST['ddm_delivery_type']) ? sanitize_text_field($_POST['ddm_delivery_type']) : 'standard';
+            $order->update_meta_data('_ddm_delivery_type', $delivery_type);
+            
+            $order->save();
+            
+            $this->add_delivery_order_note($order, $fulfillment_method, $delivery_type);
+        } catch (\Exception $e) {
+            error_log('DDM save_delivery_fields error: ' . $e->getMessage());
         }
-        
-        $delivery_date = $this->get_delivery_date_from_request();
-        if (!empty($delivery_date)) {
-            $order->update_meta_data('_ddm_delivery_date', $delivery_date);
-        }
-        
-        $delivery_type = !empty($_POST['ddm_delivery_type']) ? sanitize_text_field($_POST['ddm_delivery_type']) : 'standard';
-        $order->update_meta_data('_ddm_delivery_type', $delivery_type);
-        
-        $order->save();
-        
-        $this->add_delivery_order_note($order, $fulfillment_method, $delivery_type);
     }
     
     private function add_delivery_order_note($order, $fulfillment_method, $delivery_type) {

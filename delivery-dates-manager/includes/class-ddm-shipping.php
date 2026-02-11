@@ -12,6 +12,7 @@ class DDM_Shipping {
         add_action('wp_ajax_ddm_set_fulfillment_method', array($this, 'ajax_set_fulfillment_method'));
         add_action('wp_ajax_nopriv_ddm_set_fulfillment_method', array($this, 'ajax_set_fulfillment_method'));
         add_action('woocommerce_cart_calculate_fees', array($this, 'add_delivery_fee'));
+        add_filter('woocommerce_available_payment_gateways', array($this, 'ensure_cod_available'));
     }
     
     public function modify_shipping_rates($rates, $package) {
@@ -41,7 +42,9 @@ class DDM_Shipping {
                     array(),
                     'flat_rate'
                 );
-                return array($rate_id => $ddm_rate);
+                $new_rates = array($rate_id => $ddm_rate);
+                $this->sync_chosen_method($new_rates);
+                return $new_rates;
             }
             return $rates;
         }
@@ -53,7 +56,9 @@ class DDM_Shipping {
             $first_rate->cost = 0;
             $first_rate->label = __('Pickup', 'delivery-dates-manager');
             $first_rate->taxes = array();
-            return array($first_rate_key => $first_rate);
+            $new_rates = array($first_rate_key => $first_rate);
+            $this->sync_chosen_method($new_rates);
+            return $new_rates;
         }
         
         $zone_id = WC()->session ? WC()->session->get('ddm_selected_zone') : null;
@@ -73,11 +78,34 @@ class DDM_Shipping {
             $first_rate->taxes = array();
         }
         
-        return array($first_rate_key => $first_rate);
+        $new_rates = array($first_rate_key => $first_rate);
+        $this->sync_chosen_method($new_rates);
+        return $new_rates;
+    }
+    
+    private function sync_chosen_method($rates) {
+        if (!WC()->session) {
+            return;
+        }
+        
+        $rate_keys = array_keys($rates);
+        if (empty($rate_keys)) {
+            return;
+        }
+        
+        $chosen = WC()->session->get('chosen_shipping_methods', array());
+        
+        if (empty($chosen) || !isset($rates[$chosen[0]])) {
+            WC()->session->set('chosen_shipping_methods', array($rate_keys[0]));
+        }
     }
     
     public function add_delivery_fee($cart) {
         if (is_admin() && !defined('DOING_AJAX')) {
+            return;
+        }
+        
+        if (!WC()->session) {
             return;
         }
         
@@ -167,6 +195,31 @@ class DDM_Shipping {
             WC()->session->set($session_key, false);
         }
         WC()->session->set('shipping_method_counts', array());
+    }
+    
+    public function ensure_cod_available($gateways) {
+        if (!WC()->session) {
+            return $gateways;
+        }
+        
+        $fulfillment_method = WC()->session->get('ddm_fulfillment_method', 'delivery');
+        
+        if ($fulfillment_method !== 'pickup') {
+            return $gateways;
+        }
+        
+        if (isset($gateways['cod'])) {
+            return $gateways;
+        }
+        
+        $cod_settings = get_option('woocommerce_cod_settings', array());
+        if (!empty($cod_settings['enabled']) && $cod_settings['enabled'] === 'yes') {
+            $cod = new WC_Gateway_COD();
+            $cod->enabled = 'yes';
+            $gateways['cod'] = $cod;
+        }
+        
+        return $gateways;
     }
     
     private function get_zone_name($zone_id) {

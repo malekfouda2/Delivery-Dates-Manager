@@ -39,6 +39,7 @@
             
             this.toggleZoneField();
             this.updateFulfillmentMethod(this.fulfillmentMethod);
+            this.persistHiddenFields();
             
             if (this.fulfillmentMethod === 'pickup') {
                 this.loadPickupDates();
@@ -102,6 +103,7 @@
             this.selectedZone = zoneId;
             $('#ddm_delivery_date').val('');
             this.availableDates = [];
+            this.persistHiddenFields();
 
             if (!zoneId) {
                 $('#ddm_delivery_date').prop('disabled', true);
@@ -219,6 +221,8 @@
                 }
             }
 
+            this.persistHiddenFields();
+
             $.ajax({
                 url: ddm_checkout.ajax_url,
                 type: 'POST',
@@ -268,6 +272,30 @@
             }
         },
 
+        persistHiddenFields: function() {
+            var $form = $('form.checkout, form.woocommerce-checkout');
+            if (!$form.length) return;
+
+            var method = $('input[name="ddm_fulfillment_method"]:checked').val() || this.fulfillmentMethod || 'delivery';
+            var zone = $('#ddm_delivery_zone').val() || '';
+            var date = $('#ddm_delivery_date').val() || '';
+            var dtype = $('#ddm_delivery_type').val() || 'standard';
+
+            this.ensureHiddenField($form, 'ddm_fulfillment_method_hidden', 'ddm_fulfillment_method', method);
+            this.ensureHiddenField($form, 'ddm_delivery_zone_hidden', 'ddm_delivery_zone', zone);
+            this.ensureHiddenField($form, 'ddm_delivery_date_hidden', 'ddm_delivery_date', date);
+            this.ensureHiddenField($form, 'ddm_delivery_type_hidden', 'ddm_delivery_type', dtype);
+        },
+
+        ensureHiddenField: function($form, id, name, value) {
+            var $hidden = $form.find('#' + id);
+            if ($hidden.length) {
+                $hidden.val(value);
+            } else {
+                $form.append('<input type="hidden" id="' + id + '" name="' + name + '" value="' + value + '" />');
+            }
+        },
+
         onCheckoutUpdate: function() {
             var self = this;
             
@@ -279,6 +307,7 @@
                 }
                 
                 $('#ddm_delivery_date').datepicker('refresh');
+                self.persistHiddenFields();
             }, 100);
         }
     };
