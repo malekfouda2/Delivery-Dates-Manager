@@ -20,6 +20,9 @@ class DDM_Checkout {
         add_action('wp_ajax_nopriv_ddm_check_date_availability', array($this, 'ajax_check_date_availability'));
         add_action('wp_ajax_ddm_get_pickup_dates', array($this, 'ajax_get_pickup_dates'));
         add_action('wp_ajax_nopriv_ddm_get_pickup_dates', array($this, 'ajax_get_pickup_dates'));
+        add_action('wp_ajax_ddm_save_date_to_session', array($this, 'ajax_save_date_to_session'));
+        add_action('wp_ajax_nopriv_ddm_save_date_to_session', array($this, 'ajax_save_date_to_session'));
+        add_action('woocommerce_checkout_update_order_review', array($this, 'capture_fields_from_order_review'));
         add_filter('woocommerce_billing_fields', array($this, 'force_egypt_country'));
     }
     
@@ -148,23 +151,63 @@ class DDM_Checkout {
         return $fields;
     }
     
+    private function get_fulfillment_method_from_request() {
+        if (isset($_POST['ddm_fulfillment_method']) && !empty($_POST['ddm_fulfillment_method'])) {
+            return sanitize_text_field($_POST['ddm_fulfillment_method']);
+        }
+        if (WC()->session) {
+            $session_method = WC()->session->get('ddm_fulfillment_method');
+            if ($session_method) {
+                return $session_method;
+            }
+        }
+        return 'delivery';
+    }
+    
+    private function get_delivery_zone_from_request() {
+        if (!empty($_POST['ddm_delivery_zone'])) {
+            return absint($_POST['ddm_delivery_zone']);
+        }
+        if (WC()->session) {
+            $session_zone = WC()->session->get('ddm_selected_zone');
+            if ($session_zone) {
+                return absint($session_zone);
+            }
+        }
+        return 0;
+    }
+    
+    private function get_delivery_date_from_request() {
+        if (!empty($_POST['ddm_delivery_date'])) {
+            return sanitize_text_field($_POST['ddm_delivery_date']);
+        }
+        if (WC()->session) {
+            $session_date = WC()->session->get('ddm_delivery_date');
+            if ($session_date) {
+                return sanitize_text_field($session_date);
+            }
+        }
+        return '';
+    }
+    
     public function validate_delivery_fields() {
-        $fulfillment_method = isset($_POST['ddm_fulfillment_method']) ? sanitize_text_field($_POST['ddm_fulfillment_method']) : 'delivery';
+        $fulfillment_method = $this->get_fulfillment_method_from_request();
         
         if ($fulfillment_method === 'delivery') {
-            if (empty($_POST['ddm_delivery_zone'])) {
+            $zone_id = $this->get_delivery_zone_from_request();
+            if (empty($zone_id)) {
                 wc_add_notice(__('Please select a delivery zone.', 'delivery-dates-manager'), 'error');
             }
         }
         
-        if (empty($_POST['ddm_delivery_date'])) {
+        $delivery_date = $this->get_delivery_date_from_request();
+        
+        if (empty($delivery_date)) {
             wc_add_notice(__('Please select a date.', 'delivery-dates-manager'), 'error');
         } else {
-            $delivery_date = sanitize_text_field($_POST['ddm_delivery_date']);
-            
             if ($fulfillment_method === 'delivery') {
-                $zone_id = absint($_POST['ddm_delivery_zone']);
-                if (!$this->is_date_valid($delivery_date, $zone_id)) {
+                $zone_id = $this->get_delivery_zone_from_request();
+                if ($zone_id && !$this->is_date_valid($delivery_date, $zone_id)) {
                     wc_add_notice(__('The selected delivery date is not available. Please choose another date.', 'delivery-dates-manager'), 'error');
                 }
             } else {
@@ -206,6 +249,39 @@ class DDM_Checkout {
         }
         
         return true;
+    }
+    
+    public function capture_fields_from_order_review($posted_data) {
+        if (!WC()->session) {
+            return;
+        }
+        
+        $data = array();
+        parse_str($posted_data, $data);
+        
+        if (!empty($data['ddm_delivery_date'])) {
+            WC()->session->set('ddm_delivery_date', sanitize_text_field($data['ddm_delivery_date']));
+        }
+        
+        if (!empty($data['ddm_fulfillment_method'])) {
+            WC()->session->set('ddm_fulfillment_method', sanitize_text_field($data['ddm_fulfillment_method']));
+        }
+        
+        if (!empty($data['ddm_delivery_zone'])) {
+            WC()->session->set('ddm_selected_zone', absint($data['ddm_delivery_zone']));
+        }
+    }
+    
+    public function ajax_save_date_to_session() {
+        check_ajax_referer('ddm_checkout_nonce', 'nonce');
+        
+        $date = isset($_POST['date']) ? sanitize_text_field($_POST['date']) : '';
+        
+        if ($date && WC()->session) {
+            WC()->session->set('ddm_delivery_date', $date);
+        }
+        
+        wp_send_json_success();
     }
     
     public function ajax_get_pickup_dates() {
@@ -283,17 +359,16 @@ class DDM_Checkout {
             return;
         }
         
-        $fulfillment_method = isset($_POST['ddm_fulfillment_method']) ? sanitize_text_field($_POST['ddm_fulfillment_method']) : 'delivery';
+        $fulfillment_method = $this->get_fulfillment_method_from_request();
         $order->update_meta_data('_ddm_fulfillment_method', $fulfillment_method);
         
         if ($fulfillment_method === 'pickup') {
             $order->update_meta_data('_ddm_delivery_zone_name', __('Pickup - Heliopolis', 'delivery-dates-manager'));
             $order->update_meta_data('_ddm_delivery_fee', 0);
         } else {
-            $zone_id = 0;
+            $zone_id = $this->get_delivery_zone_from_request();
             
-            if (!empty($_POST['ddm_delivery_zone'])) {
-                $zone_id = absint($_POST['ddm_delivery_zone']);
+            if ($zone_id) {
                 $order->update_meta_data('_ddm_delivery_zone', $zone_id);
                 
                 $zones = $this->get_enabled_zones();
@@ -306,8 +381,9 @@ class DDM_Checkout {
             }
         }
         
-        if (!empty($_POST['ddm_delivery_date'])) {
-            $order->update_meta_data('_ddm_delivery_date', sanitize_text_field($_POST['ddm_delivery_date']));
+        $delivery_date = $this->get_delivery_date_from_request();
+        if (!empty($delivery_date)) {
+            $order->update_meta_data('_ddm_delivery_date', $delivery_date);
         }
         
         $delivery_type = !empty($_POST['ddm_delivery_type']) ? sanitize_text_field($_POST['ddm_delivery_type']) : 'standard';

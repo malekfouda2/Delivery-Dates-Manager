@@ -29,14 +29,25 @@ class DDM_Shipping {
             return $rates;
         }
         
+        $fulfillment_method = WC()->session ? WC()->session->get('ddm_fulfillment_method', 'delivery') : 'delivery';
+        
         if (empty($rates)) {
+            if ($fulfillment_method === 'pickup') {
+                $rate_id = 'flat_rate:ddm';
+                $ddm_rate = new WC_Shipping_Rate(
+                    $rate_id,
+                    __('Pickup', 'delivery-dates-manager'),
+                    0,
+                    array(),
+                    'flat_rate'
+                );
+                return array($rate_id => $ddm_rate);
+            }
             return $rates;
         }
         
         $first_rate_key = array_key_first($rates);
         $first_rate = $rates[$first_rate_key];
-        
-        $fulfillment_method = WC()->session->get('ddm_fulfillment_method', 'delivery');
         
         if ($fulfillment_method === 'pickup') {
             $first_rate->cost = 0;
@@ -45,7 +56,7 @@ class DDM_Shipping {
             return array($first_rate_key => $first_rate);
         }
         
-        $zone_id = WC()->session->get('ddm_selected_zone');
+        $zone_id = WC()->session ? WC()->session->get('ddm_selected_zone') : null;
         
         if ($zone_id && isset($settings[$zone_id]) && !empty($settings[$zone_id]['enabled'])) {
             $zone_name = $this->get_zone_name($zone_id);

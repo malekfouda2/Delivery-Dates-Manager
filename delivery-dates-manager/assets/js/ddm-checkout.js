@@ -219,6 +219,16 @@
                 }
             }
 
+            $.ajax({
+                url: ddm_checkout.ajax_url,
+                type: 'POST',
+                data: {
+                    action: 'ddm_save_date_to_session',
+                    date: dateText,
+                    nonce: ddm_checkout.nonce
+                }
+            });
+
             $(document.body).trigger('update_checkout');
         },
 
