@@ -281,9 +281,19 @@
             var date = $('#ddm_delivery_date').val() || '';
             var dtype = $('#ddm_delivery_type').val() || 'standard';
 
-            this.ensureHiddenField($form, 'ddm_fulfillment_method_hidden', 'ddm_fulfillment_method', method);
-            this.ensureHiddenField($form, 'ddm_delivery_zone_hidden', 'ddm_delivery_zone', zone);
-            this.ensureHiddenField($form, 'ddm_delivery_date_hidden', 'ddm_delivery_date', date);
+            var methodVisible = $('input[name="ddm_fulfillment_method"]').is(':visible');
+            var zoneVisible = $('#ddm_delivery_zone').is(':visible');
+            var dateVisible = $('#ddm_delivery_date').is(':visible');
+
+            if (!methodVisible) {
+                this.ensureHiddenField($form, 'ddm_fulfillment_method_hidden', 'ddm_fulfillment_method', method);
+            }
+            if (!zoneVisible) {
+                this.ensureHiddenField($form, 'ddm_delivery_zone_hidden', 'ddm_delivery_zone', zone);
+            }
+            if (!dateVisible) {
+                this.ensureHiddenField($form, 'ddm_delivery_date_hidden', 'ddm_delivery_date', date);
+            }
             this.ensureHiddenField($form, 'ddm_delivery_type_hidden', 'ddm_delivery_type', dtype);
         },
 
