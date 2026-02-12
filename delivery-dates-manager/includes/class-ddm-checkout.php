@@ -104,7 +104,7 @@ class DDM_Checkout {
         $fields['billing']['ddm_fulfillment_method'] = array(
             'type' => 'radio',
             'label' => __('Fulfillment Method', 'delivery-dates-manager'),
-            'required' => true,
+            'required' => false,
             'class' => array('form-row-wide', 'ddm-field', 'ddm-fulfillment-field'),
             'options' => array(
                 'delivery' => __('Delivery', 'delivery-dates-manager'),
@@ -122,7 +122,7 @@ class DDM_Checkout {
         $fields['billing']['ddm_delivery_zone'] = array(
             'type' => 'select',
             'label' => __('Delivery Zone', 'delivery-dates-manager'),
-            'required' => true,
+            'required' => false,
             'class' => array('form-row-wide', 'ddm-field', 'ddm-zone-field'),
             'options' => $zone_options,
             'priority' => 120,
@@ -131,7 +131,7 @@ class DDM_Checkout {
         $fields['billing']['ddm_delivery_date'] = array(
             'type' => 'text',
             'label' => __('Delivery/Pickup Date', 'delivery-dates-manager'),
-            'required' => true,
+            'required' => false,
             'class' => array('form-row-wide', 'ddm-field'),
             'placeholder' => __('Select date', 'delivery-dates-manager'),
             'custom_attributes' => array(
@@ -191,12 +191,23 @@ class DDM_Checkout {
     }
     
     public function validate_delivery_fields() {
+        $zones = $this->get_enabled_zones();
+        if (empty($zones)) {
+            return;
+        }
+        
         $fulfillment_method = $this->get_fulfillment_method_from_request();
+        
+        if (!in_array($fulfillment_method, array('delivery', 'pickup'))) {
+            wc_add_notice(__('Please select a fulfillment method (Delivery or Pickup).', 'delivery-dates-manager'), 'error');
+            return;
+        }
         
         if ($fulfillment_method === 'delivery') {
             $zone_id = $this->get_delivery_zone_from_request();
             if (empty($zone_id)) {
                 wc_add_notice(__('Please select a delivery zone.', 'delivery-dates-manager'), 'error');
+                return;
             }
         }
         
