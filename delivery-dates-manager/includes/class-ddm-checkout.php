@@ -6,14 +6,6 @@ if (!defined('ABSPATH')) {
 class DDM_Checkout {
     
     public function __construct() {
-        add_filter('woocommerce_states', array($this, 'filter_egypt_states'));
-        add_filter('woocommerce_countries', array($this, 'filter_countries'));
-        add_filter('woocommerce_default_address_fields', array($this, 'customize_address_fields'));
-        add_filter('woocommerce_checkout_fields', array($this, 'lock_country_state_fields'));
-        add_filter('woocommerce_checkout_fields', array($this, 'add_delivery_fields'), 20);
-        add_action('woocommerce_checkout_process', array($this, 'validate_delivery_fields'));
-        add_action('woocommerce_checkout_process', array($this, 'validate_location_fields'));
-        add_action('woocommerce_checkout_update_order_meta', array($this, 'save_delivery_fields'));
         add_action('wp_ajax_ddm_get_zone_dates', array($this, 'ajax_get_zone_dates'));
         add_action('wp_ajax_nopriv_ddm_get_zone_dates', array($this, 'ajax_get_zone_dates'));
         add_action('wp_ajax_ddm_check_date_availability', array($this, 'ajax_check_date_availability'));
@@ -22,8 +14,19 @@ class DDM_Checkout {
         add_action('wp_ajax_nopriv_ddm_get_pickup_dates', array($this, 'ajax_get_pickup_dates'));
         add_action('wp_ajax_ddm_save_date_to_session', array($this, 'ajax_save_date_to_session'));
         add_action('wp_ajax_nopriv_ddm_save_date_to_session', array($this, 'ajax_save_date_to_session'));
-        add_action('woocommerce_checkout_update_order_review', array($this, 'capture_fields_from_order_review'));
-        add_filter('woocommerce_billing_fields', array($this, 'force_egypt_country'));
+        
+        if (!is_admin()) {
+            add_filter('woocommerce_states', array($this, 'filter_egypt_states'));
+            add_filter('woocommerce_countries', array($this, 'filter_countries'));
+            add_filter('woocommerce_default_address_fields', array($this, 'customize_address_fields'));
+            add_filter('woocommerce_checkout_fields', array($this, 'lock_country_state_fields'));
+            add_filter('woocommerce_checkout_fields', array($this, 'add_delivery_fields'), 20);
+            add_action('woocommerce_checkout_process', array($this, 'validate_delivery_fields'));
+            add_action('woocommerce_checkout_process', array($this, 'validate_location_fields'));
+            add_action('woocommerce_checkout_update_order_meta', array($this, 'save_delivery_fields'));
+            add_action('woocommerce_checkout_update_order_review', array($this, 'capture_fields_from_order_review'));
+            add_filter('woocommerce_billing_fields', array($this, 'force_egypt_country'));
+        }
     }
     
     public function filter_egypt_states($states) {
