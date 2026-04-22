@@ -29,7 +29,11 @@ class DDM_Admin {
         $names        = self::$ddm_options;
         $placeholders = implode( ',', array_fill( 0, count( $names ), '%s' ) );
         
-        $updated = $wpdb->query(
+        // Only update the DB row — do NOT delete the alloptions cache.
+        // Deleting the cache forces WordPress to reload ALL autoloaded options
+        // from the database, which is exactly the large memory allocation we are
+        // trying to avoid.  The DB change takes effect on the next page load.
+        $wpdb->query(
             $wpdb->prepare(
                 "UPDATE {$wpdb->options} SET autoload = 'no'
                  WHERE option_name IN ($placeholders)
@@ -37,15 +41,12 @@ class DDM_Admin {
                 $names
             )
         );
-        
-        if ( $updated ) {
-            wp_cache_delete( 'alloptions', 'options' );
-        }
     }
     
     public function intercept_option_update( $new_value, $old_value, $option ) {
         global $wpdb;
         
+        // Write directly to the DB with autoload='no'.
         $rows = $wpdb->update(
             $wpdb->options,
             array(
@@ -66,11 +67,15 @@ class DDM_Admin {
             );
         }
         
+        // Update the individual option cache so get_option() returns the new value.
         wp_cache_set( $option, $new_value, 'options' );
-        wp_cache_delete( 'alloptions', 'options' );
         
-        // Return the OLD value — this makes update_option() think nothing changed
-        // and return early, completely skipping wp_load_alloptions() which exhausts memory.
+        // Do NOT call wp_cache_delete('alloptions', ...) here.
+        // That would force a full reload of every plugin's autoloaded options,
+        // which is the very allocation that exhausts the 512 MB memory limit.
+        
+        // Returning $old_value makes update_option() believe nothing changed and
+        // exit before it ever calls wp_load_alloptions() — the real source of the crash.
         return $old_value;
     }
     
