@@ -16,14 +16,17 @@ class DDM_Admin {
         add_action('admin_menu', array($this, 'add_admin_menu'));
         add_action('admin_init', array($this, 'register_settings'));
         add_action('admin_init', array($this, 'fix_autoload'), 1);
-        add_action('updated_option', array($this, 'fix_autoload_after_save'));
         add_action('wp_ajax_ddm_save_zone_settings', array($this, 'ajax_save_zone_settings'));
+        
+        foreach ( self::$ddm_options as $opt ) {
+            add_filter( "pre_update_option_{$opt}", array( $this, 'intercept_option_update' ), 10, 3 );
+        }
     }
     
     public function fix_autoload() {
         global $wpdb;
         
-        $names = self::$ddm_options;
+        $names        = self::$ddm_options;
         $placeholders = implode( ',', array_fill( 0, count( $names ), '%s' ) );
         
         $updated = $wpdb->query(
@@ -40,16 +43,35 @@ class DDM_Admin {
         }
     }
     
-    public function fix_autoload_after_save( $option_name ) {
-        if ( in_array( $option_name, self::$ddm_options, true ) ) {
-            global $wpdb;
-            $wpdb->update(
-                $wpdb->options,
-                array( 'autoload' => 'no' ),
-                array( 'option_name' => $option_name )
+    public function intercept_option_update( $new_value, $old_value, $option ) {
+        global $wpdb;
+        
+        $rows = $wpdb->update(
+            $wpdb->options,
+            array(
+                'option_value' => maybe_serialize( $new_value ),
+                'autoload'     => 'no',
+            ),
+            array( 'option_name' => $option )
+        );
+        
+        if ( $rows === false || $rows === 0 ) {
+            $wpdb->query(
+                $wpdb->prepare(
+                    "INSERT IGNORE INTO {$wpdb->options} (option_name, option_value, autoload)
+                     VALUES (%s, %s, 'no')",
+                    $option,
+                    maybe_serialize( $new_value )
+                )
             );
-            wp_cache_delete( 'alloptions', 'options' );
         }
+        
+        wp_cache_set( $option, $new_value, 'options' );
+        wp_cache_delete( 'alloptions', 'options' );
+        
+        // Return the OLD value — this makes update_option() think nothing changed
+        // and return early, completely skipping wp_load_alloptions() which exhausts memory.
+        return $old_value;
     }
     
     public function add_admin_menu() {
