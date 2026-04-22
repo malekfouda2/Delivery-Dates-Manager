@@ -244,8 +244,11 @@ class DDM_Shipping {
         $shipping_methods = $zone->get_shipping_methods(true);
         
         foreach ($shipping_methods as $method) {
-            if ($method->id === 'flat_rate' && $method->is_enabled()) {
-                $cost = $method->get_option('cost');
+            if (!is_object($method) || !isset($method->id)) {
+                continue;
+            }
+            if ($method->id === 'flat_rate' && method_exists($method, 'is_enabled') && $method->is_enabled()) {
+                $cost = method_exists($method, 'get_option') ? $method->get_option('cost') : '';
                 if ($cost !== '' && $cost !== null) {
                     return floatval($cost);
                 }

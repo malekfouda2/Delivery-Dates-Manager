@@ -15,7 +15,9 @@ class DDM_Checkout {
         add_action('wp_ajax_ddm_save_date_to_session', array($this, 'ajax_save_date_to_session'));
         add_action('wp_ajax_nopriv_ddm_save_date_to_session', array($this, 'ajax_save_date_to_session'));
         
-        if (!is_admin()) {
+        $is_admin_page = is_admin() && !(defined('DOING_AJAX') && DOING_AJAX);
+        
+        if (!$is_admin_page) {
             add_filter('woocommerce_states', array($this, 'filter_egypt_states'));
             add_filter('woocommerce_countries', array($this, 'filter_countries'));
             add_filter('woocommerce_default_address_fields', array($this, 'customize_address_fields'));
