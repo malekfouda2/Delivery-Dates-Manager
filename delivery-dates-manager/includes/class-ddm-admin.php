@@ -5,10 +5,51 @@ if (!defined('ABSPATH')) {
 
 class DDM_Admin {
     
+    private static $ddm_options = array(
+        'ddm_zone_settings',
+        'ddm_global_blocked_dates',
+        'ddm_pickup_message',
+        'ddm_pickup_cutoff_time',
+    );
+    
     public function __construct() {
         add_action('admin_menu', array($this, 'add_admin_menu'));
         add_action('admin_init', array($this, 'register_settings'));
+        add_action('admin_init', array($this, 'fix_autoload'), 1);
+        add_action('updated_option', array($this, 'fix_autoload_after_save'));
         add_action('wp_ajax_ddm_save_zone_settings', array($this, 'ajax_save_zone_settings'));
+    }
+    
+    public function fix_autoload() {
+        global $wpdb;
+        
+        $names = self::$ddm_options;
+        $placeholders = implode( ',', array_fill( 0, count( $names ), '%s' ) );
+        
+        $updated = $wpdb->query(
+            $wpdb->prepare(
+                "UPDATE {$wpdb->options} SET autoload = 'no'
+                 WHERE option_name IN ($placeholders)
+                 AND autoload != 'no'",
+                $names
+            )
+        );
+        
+        if ( $updated ) {
+            wp_cache_delete( 'alloptions', 'options' );
+        }
+    }
+    
+    public function fix_autoload_after_save( $option_name ) {
+        if ( in_array( $option_name, self::$ddm_options, true ) ) {
+            global $wpdb;
+            $wpdb->update(
+                $wpdb->options,
+                array( 'autoload' => 'no' ),
+                array( 'option_name' => $option_name )
+            );
+            wp_cache_delete( 'alloptions', 'options' );
+        }
     }
     
     public function add_admin_menu() {

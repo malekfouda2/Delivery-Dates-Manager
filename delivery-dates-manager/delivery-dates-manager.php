@@ -3,7 +3,7 @@
  * Plugin Name: Delivery Dates Manager
  * Plugin URI: https://www.malekfouda.com
  * Description: A powerful delivery scheduling plugin for WooCommerce with Cairo-only shipping zones, same-day delivery options, and flexible date management.
- * Version: 1.1.2
+ * Version: 1.1.3
  * Author: Malek Fouda
  * Author URI: https://www.malekfouda.com
  * License: GPL v2 or later
@@ -20,7 +20,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('DDM_VERSION', '1.1.2');
+define('DDM_VERSION', '1.1.3');
 define('DDM_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('DDM_PLUGIN_URL', plugin_dir_url(__FILE__));
 define('DDM_PLUGIN_BASENAME', plugin_basename(__FILE__));
@@ -162,10 +162,34 @@ final class Delivery_Dates_Manager {
     }
     
     public function activate() {
-        if (!get_option('ddm_zone_settings')) {
-            update_option('ddm_zone_settings', array());
+        $defaults = array(
+            'ddm_zone_settings'       => array(),
+            'ddm_global_blocked_dates' => '',
+            'ddm_pickup_message'      => 'Pickup from Heliopolis (order will be ready in 24 Hours, please make sure to select pickup date from the date form below)',
+            'ddm_pickup_cutoff_time'  => '14:00',
+        );
+        
+        foreach ( $defaults as $name => $default ) {
+            if ( get_option( $name ) === false ) {
+                add_option( $name, $default, '', 'no' );
+            }
         }
+        
+        $this->force_no_autoload();
         flush_rewrite_rules();
+    }
+    
+    private function force_no_autoload() {
+        global $wpdb;
+        $names = array( 'ddm_zone_settings', 'ddm_global_blocked_dates', 'ddm_pickup_message', 'ddm_pickup_cutoff_time' );
+        $placeholders = implode( ',', array_fill( 0, count( $names ), '%s' ) );
+        $wpdb->query(
+            $wpdb->prepare(
+                "UPDATE {$wpdb->options} SET autoload = 'no' WHERE option_name IN ($placeholders)",
+                $names
+            )
+        );
+        wp_cache_delete( 'alloptions', 'options' );
     }
     
     public function deactivate() {
