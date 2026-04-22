@@ -198,6 +198,10 @@ class DDM_Shipping {
     }
     
     public function ensure_cod_available($gateways) {
+        if (is_admin() && !(defined('DOING_AJAX') && DOING_AJAX)) {
+            return $gateways;
+        }
+        
         if (!WC()->session) {
             return $gateways;
         }
@@ -232,27 +236,23 @@ class DDM_Shipping {
     }
     
     public static function get_wc_zone_flat_rate($zone_id) {
-        if (!class_exists('WC_Shipping_Zones')) {
+        global $wpdb;
+        
+        $instance_id = $wpdb->get_var( $wpdb->prepare(
+            "SELECT instance_id FROM {$wpdb->prefix}woocommerce_shipping_zone_methods
+             WHERE zone_id = %d AND method_id = 'flat_rate' AND is_enabled = 1
+             LIMIT 1",
+            intval($zone_id)
+        ) );
+        
+        if (!$instance_id) {
             return 0;
         }
         
-        $zone = WC_Shipping_Zones::get_zone($zone_id);
-        if (!$zone) {
-            return 0;
-        }
+        $cost = get_option( 'woocommerce_flat_rate_' . $instance_id . '_settings' );
         
-        $shipping_methods = $zone->get_shipping_methods(true);
-        
-        foreach ($shipping_methods as $method) {
-            if (!is_object($method) || !isset($method->id)) {
-                continue;
-            }
-            if ($method->id === 'flat_rate' && method_exists($method, 'is_enabled') && $method->is_enabled()) {
-                $cost = method_exists($method, 'get_option') ? $method->get_option('cost') : '';
-                if ($cost !== '' && $cost !== null) {
-                    return floatval($cost);
-                }
-            }
+        if (is_array($cost) && isset($cost['cost']) && $cost['cost'] !== '') {
+            return floatval($cost['cost']);
         }
         
         return 0;
