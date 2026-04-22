@@ -4,7 +4,7 @@ A powerful WooCommerce plugin for delivery date scheduling, specifically designe
 
 **Author:** Malek Fouda  
 **Website:** [malekfouda.com](https://www.malekfouda.com)  
-**Version:** 1.0.7  
+**Version:** 1.1.6  
 **License:** GPL v2 or later
 
 ## Features
@@ -77,6 +77,11 @@ The plugin stores the following order meta:
 For support, feature requests, or bug reports, please contact [Malek Fouda](https://www.malekfouda.com).
 
 ## Changelog
+
+### 1.1.6
+- Hardened settings saving to bypass WordPress `options.php` and avoid memory exhaustion on sites with oversized autoloaded options
+- Saved all plugin options directly with `autoload = no`
+- Added an in-plugin success notice after settings save
 
 ### 1.0.7
 - Added same-day pickup product eligibility

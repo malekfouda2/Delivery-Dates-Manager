@@ -16,6 +16,7 @@ class DDM_Admin {
         add_action('admin_menu', array($this, 'add_admin_menu'));
         add_action('admin_init', array($this, 'register_settings'));
         add_action('admin_init', array($this, 'fix_autoload'), 1);
+        add_action('admin_post_ddm_save_settings', array($this, 'handle_settings_save'));
         add_action('wp_ajax_ddm_save_zone_settings', array($this, 'ajax_save_zone_settings'));
         
         foreach ( self::$ddm_options as $opt ) {
@@ -44,31 +45,7 @@ class DDM_Admin {
     }
     
     public function intercept_option_update( $new_value, $old_value, $option ) {
-        global $wpdb;
-        
-        // Write directly to the DB with autoload='no'.
-        $rows = $wpdb->update(
-            $wpdb->options,
-            array(
-                'option_value' => maybe_serialize( $new_value ),
-                'autoload'     => 'no',
-            ),
-            array( 'option_name' => $option )
-        );
-        
-        if ( $rows === false || $rows === 0 ) {
-            $wpdb->query(
-                $wpdb->prepare(
-                    "INSERT IGNORE INTO {$wpdb->options} (option_name, option_value, autoload)
-                     VALUES (%s, %s, 'no')",
-                    $option,
-                    maybe_serialize( $new_value )
-                )
-            );
-        }
-        
-        // Update the individual option cache so get_option() returns the new value.
-        wp_cache_set( $option, $new_value, 'options' );
+        $this->persist_option_value( $option, $new_value );
         
         // Do NOT call wp_cache_delete('alloptions', ...) here.
         // That would force a full reload of every plugin's autoloaded options,
@@ -77,6 +54,80 @@ class DDM_Admin {
         // Returning $old_value makes update_option() believe nothing changed and
         // exit before it ever calls wp_load_alloptions() — the real source of the crash.
         return $old_value;
+    }
+
+    private function persist_option_value( $option, $value ) {
+        global $wpdb;
+
+        $serialized_value = maybe_serialize( $value );
+
+        $rows = $wpdb->update(
+            $wpdb->options,
+            array(
+                'option_value' => $serialized_value,
+                'autoload'     => 'no',
+            ),
+            array( 'option_name' => $option )
+        );
+
+        if ( $rows === false || $rows === 0 ) {
+            $wpdb->query(
+                $wpdb->prepare(
+                    "INSERT IGNORE INTO {$wpdb->options} (option_name, option_value, autoload)
+                     VALUES (%s, %s, 'no')",
+                    $option,
+                    $serialized_value
+                )
+            );
+        }
+
+        $notoptions = wp_cache_get( 'notoptions', 'options' );
+        if ( is_array( $notoptions ) && isset( $notoptions[ $option ] ) ) {
+            unset( $notoptions[ $option ] );
+            wp_cache_set( 'notoptions', $notoptions, 'options' );
+        }
+
+        wp_cache_set( $option, $value, 'options' );
+    }
+
+    public function handle_settings_save() {
+        if ( ! current_user_can( 'manage_woocommerce' ) ) {
+            wp_die( esc_html__( 'You do not have permission to manage delivery settings.', 'delivery-dates-manager' ) );
+        }
+
+        check_admin_referer( 'ddm_save_settings', 'ddm_settings_nonce' );
+
+        $zone_settings = isset( $_POST['ddm_zone_settings'] )
+            ? $this->sanitize_zone_settings( wp_unslash( $_POST['ddm_zone_settings'] ) )
+            : array();
+
+        $global_blocked_dates = isset( $_POST['ddm_global_blocked_dates'] )
+            ? $this->sanitize_blocked_dates( wp_unslash( $_POST['ddm_global_blocked_dates'] ) )
+            : '';
+
+        $pickup_message = isset( $_POST['ddm_pickup_message'] )
+            ? sanitize_textarea_field( wp_unslash( $_POST['ddm_pickup_message'] ) )
+            : 'Pickup from Heliopolis (order will be ready in 24 Hours, please make sure to select pickup date from the date form below)';
+
+        $pickup_cutoff_time = isset( $_POST['ddm_pickup_cutoff_time'] )
+            ? sanitize_text_field( wp_unslash( $_POST['ddm_pickup_cutoff_time'] ) )
+            : '14:00';
+
+        $this->persist_option_value( 'ddm_zone_settings', $zone_settings );
+        $this->persist_option_value( 'ddm_global_blocked_dates', $global_blocked_dates );
+        $this->persist_option_value( 'ddm_pickup_message', $pickup_message );
+        $this->persist_option_value( 'ddm_pickup_cutoff_time', $pickup_cutoff_time );
+
+        $redirect_url = add_query_arg(
+            array(
+                'page'                 => 'ddm-settings',
+                'ddm-settings-updated' => '1',
+            ),
+            admin_url( 'admin.php' )
+        );
+
+        wp_safe_redirect( $redirect_url );
+        exit;
     }
     
     public function add_admin_menu() {
@@ -185,7 +236,7 @@ class DDM_Admin {
             'blocked_dates' => $blocked_dates,
         );
         
-        update_option('ddm_zone_settings', $settings);
+        $this->persist_option_value( 'ddm_zone_settings', $settings );
         wp_send_json_success(__('Settings saved successfully', 'delivery-dates-manager'));
     }
     
@@ -208,10 +259,16 @@ class DDM_Admin {
         <div class="wrap ddm-admin-wrap">
             <h1><?php esc_html_e('Delivery Dates Manager', 'delivery-dates-manager'); ?></h1>
             <p class="description"><?php esc_html_e('Configure delivery settings for each Cairo shipping zone.', 'delivery-dates-manager'); ?></p>
+
+            <?php if ( isset( $_GET['ddm-settings-updated'] ) ) : ?>
+                <div class="notice notice-success is-dismissible">
+                    <p><?php esc_html_e( 'Settings saved.', 'delivery-dates-manager' ); ?></p>
+                </div>
+            <?php endif; ?>
             
-            <form method="post" action="options.php" id="ddm-settings-form">
-                <?php settings_fields('ddm_settings'); ?>
-                <?php wp_nonce_field('ddm_admin_nonce', 'ddm_nonce'); ?>
+            <form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" id="ddm-settings-form">
+                <input type="hidden" name="action" value="ddm_save_settings">
+                <?php wp_nonce_field( 'ddm_save_settings', 'ddm_settings_nonce' ); ?>
                 
                 <div class="ddm-global-settings" style="background: #fff; padding: 20px; margin-bottom: 20px; border: 1px solid #ccd0d4; border-radius: 4px;">
                     <h2 style="margin-top: 0;"><?php esc_html_e('Global Settings', 'delivery-dates-manager'); ?></h2>

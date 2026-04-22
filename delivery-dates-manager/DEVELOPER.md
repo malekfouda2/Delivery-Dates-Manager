@@ -1,8 +1,8 @@
 # Delivery Dates Manager - Developer Documentation
 
-**Version:** 1.0.7  
+**Version:** 1.1.6  
 **Author:** Malek Fouda  
-**Last Updated:** January 2026
+**Last Updated:** April 2026
 
 This documentation provides comprehensive technical details for developers who will maintain, extend, or modify the Delivery Dates Manager plugin.
 
@@ -876,6 +876,7 @@ View in `/wp-content/debug.log`.
 
 | Version | Date | Changes |
 |---------|------|---------|
+| 1.1.6 | Apr 2026 | Bypassed `options.php` for DDM settings saves, forced DDM options to persist with autoload disabled |
 | 1.0.7 | Jan 2026 | Same-day pickup, pickup cutoff time, validation fixes |
 | 1.0.6 | Jan 2026 | Pickup option, fulfillment method toggle |
 | 1.0.5 | Jan 2026 | Dynamic shipping, blocked dates |
