@@ -6,7 +6,7 @@ Tested up to: 6.4
 Requires PHP: 7.4
 WC requires at least: 5.0
 WC tested up to: 8.0
-Stable tag: 1.1.6
+Stable tag: 1.1.7
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -65,6 +65,10 @@ Same-day delivery is available when:
 Yes, each zone can have a maximum orders per day limit. Once reached, that date becomes unavailable for new orders.
 
 == Changelog ==
+
+= 1.1.7 =
+* Added a separate "Normal Pickup Cutoff Time" setting for next-day pickup, configurable in the dashboard
+* After the normal pickup cutoff, tomorrow is no longer offered for pickup; earliest pickup moves to the day after
 
 = 1.1.6 =
 * Hardened admin settings saves to bypass the core options.php flow on large-autoload sites

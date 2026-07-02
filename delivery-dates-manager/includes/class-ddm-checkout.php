@@ -259,11 +259,19 @@ class DDM_Checkout {
             }
             return true;
         }
-        
+
         if ($date < $today) {
             return false;
         }
-        
+
+        $tomorrow = (clone $now)->modify('+1 day')->format('Y-m-d');
+        if ($date === $tomorrow) {
+            $normal_cutoff_time = get_option('ddm_normal_pickup_cutoff_time', '14:00');
+            if (!$this->is_before_cutoff($normal_cutoff_time)) {
+                return false;
+            }
+        }
+
         return true;
     }
     
@@ -336,26 +344,34 @@ class DDM_Checkout {
             }
         }
         
+        $normal_cutoff_time = get_option('ddm_normal_pickup_cutoff_time', '14:00');
+        $is_before_normal_cutoff = $this->is_before_cutoff($normal_cutoff_time);
+        $tomorrow = (clone $now)->modify('+1 day')->format('Y-m-d');
+
         $check_date = clone $now;
         $days_checked = 0;
         $max_days = 30;
-        
+
         while (count($dates) < 14 && $days_checked < $max_days) {
             $check_date->modify('+1 day');
             $date_string = $check_date->format('Y-m-d');
             $days_checked++;
-            
+
+            if ($date_string === $tomorrow && !$is_before_normal_cutoff) {
+                continue;
+            }
+
             if (in_array($date_string, $blocked_dates)) {
                 continue;
             }
-            
+
             $dates[] = array(
                 'date' => $date_string,
                 'label' => $check_date->format('D, M j'),
                 'type' => 'pickup',
             );
         }
-        
+
         return $dates;
     }
     

@@ -1,6 +1,6 @@
 # Delivery Dates Manager - Developer Documentation
 
-**Version:** 1.1.6  
+**Version:** 1.1.7  
 **Author:** Malek Fouda  
 **Last Updated:** April 2026
 
@@ -167,6 +167,7 @@ Handles the admin settings page under WooCommerce menu.
 | `ddm_global_blocked_dates` | string | `''` |
 | `ddm_pickup_message` | string | (long default message) |
 | `ddm_pickup_cutoff_time` | string | `'14:00'` |
+| `ddm_normal_pickup_cutoff_time` | string | `'14:00'` |
 
 ---
 
@@ -355,7 +356,8 @@ Handles order meta display in admin, customer views, and emails.
 | `ddm_zone_settings` | array | Zone-specific settings keyed by zone ID |
 | `ddm_global_blocked_dates` | string | Comma-separated YYYY-MM-DD dates |
 | `ddm_pickup_message` | string | Pickup option label text |
-| `ddm_pickup_cutoff_time` | string | HH:MM format time |
+| `ddm_pickup_cutoff_time` | string | HH:MM same-day pickup cutoff |
+| `ddm_normal_pickup_cutoff_time` | string | HH:MM next-day (normal) pickup cutoff |
 
 ### Zone Settings Structure
 
@@ -876,6 +878,7 @@ View in `/wp-content/debug.log`.
 
 | Version | Date | Changes |
 |---------|------|---------|
+| 1.1.7 | Jul 2026 | Added `ddm_normal_pickup_cutoff_time` — separate cutoff for next-day pickup, configurable in dashboard |
 | 1.1.6 | Apr 2026 | Bypassed `options.php` for DDM settings saves, forced DDM options to persist with autoload disabled |
 | 1.0.7 | Jan 2026 | Same-day pickup, pickup cutoff time, validation fixes |
 | 1.0.6 | Jan 2026 | Pickup option, fulfillment method toggle |

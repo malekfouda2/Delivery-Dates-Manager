@@ -4,7 +4,7 @@ A powerful WooCommerce plugin for delivery date scheduling, specifically designe
 
 **Author:** Malek Fouda  
 **Website:** [malekfouda.com](https://www.malekfouda.com)  
-**Version:** 1.1.6  
+**Version:** 1.1.7  
 **License:** GPL v2 or later
 
 ## Features
@@ -40,6 +40,7 @@ A powerful WooCommerce plugin for delivery date scheduling, specifically designe
 - **Blocked Dates (All Zones)** - Dates unavailable for all zones (holidays, etc.)
 - **Pickup Button Label** - Custom text for the pickup option at checkout
 - **Pickup Cutoff Time** - Time after which same-day pickup is unavailable
+- **Normal Pickup Cutoff Time** - Time after which next-day (normal) pickup is unavailable; earliest pickup moves to the day after
 
 ### Zone Settings
 
@@ -77,6 +78,10 @@ The plugin stores the following order meta:
 For support, feature requests, or bug reports, please contact [Malek Fouda](https://www.malekfouda.com).
 
 ## Changelog
+
+### 1.1.7
+- Added a separate **Normal Pickup Cutoff Time** setting for next-day pickup, configurable in the settings dashboard
+- After the normal pickup cutoff passes, tomorrow is removed from pickup dates; earliest pickup moves to the day after (enforced in date generation and server-side validation)
 
 ### 1.1.6
 - Hardened settings saving to bypass WordPress `options.php` and avoid memory exhaustion on sites with oversized autoloaded options

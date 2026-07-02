@@ -10,6 +10,7 @@ class DDM_Admin {
         'ddm_global_blocked_dates',
         'ddm_pickup_message',
         'ddm_pickup_cutoff_time',
+        'ddm_normal_pickup_cutoff_time',
     );
     
     public function __construct() {
@@ -113,10 +114,15 @@ class DDM_Admin {
             ? sanitize_text_field( wp_unslash( $_POST['ddm_pickup_cutoff_time'] ) )
             : '14:00';
 
+        $normal_pickup_cutoff_time = isset( $_POST['ddm_normal_pickup_cutoff_time'] )
+            ? sanitize_text_field( wp_unslash( $_POST['ddm_normal_pickup_cutoff_time'] ) )
+            : '14:00';
+
         $this->persist_option_value( 'ddm_zone_settings', $zone_settings );
         $this->persist_option_value( 'ddm_global_blocked_dates', $global_blocked_dates );
         $this->persist_option_value( 'ddm_pickup_message', $pickup_message );
         $this->persist_option_value( 'ddm_pickup_cutoff_time', $pickup_cutoff_time );
+        $this->persist_option_value( 'ddm_normal_pickup_cutoff_time', $normal_pickup_cutoff_time );
 
         $redirect_url = add_query_arg(
             array(
@@ -161,6 +167,12 @@ class DDM_Admin {
         ));
         
         register_setting('ddm_settings', 'ddm_pickup_cutoff_time', array(
+            'type' => 'string',
+            'sanitize_callback' => 'sanitize_text_field',
+            'default' => '14:00'
+        ));
+
+        register_setting('ddm_settings', 'ddm_normal_pickup_cutoff_time', array(
             'type' => 'string',
             'sanitize_callback' => 'sanitize_text_field',
             'default' => '14:00'
@@ -246,6 +258,7 @@ class DDM_Admin {
         $global_blocked_dates = get_option('ddm_global_blocked_dates', '');
         $pickup_message = get_option('ddm_pickup_message', 'Pickup from Heliopolis (order will be ready in 24 Hours, please make sure to select pickup date from the date form below)');
         $pickup_cutoff_time = get_option('ddm_pickup_cutoff_time', '14:00');
+        $normal_pickup_cutoff_time = get_option('ddm_normal_pickup_cutoff_time', '14:00');
         $days = array(
             0 => __('Sunday', 'delivery-dates-manager'),
             1 => __('Monday', 'delivery-dates-manager'),
@@ -315,6 +328,20 @@ class DDM_Admin {
                                        value="<?php echo esc_attr($pickup_cutoff_time); ?>">
                                 <p class="description">
                                     <?php esc_html_e('Orders placed before this time are eligible for same-day pickup (if all products allow it).', 'delivery-dates-manager'); ?>
+                                </p>
+                            </td>
+                        </tr>
+                        <tr>
+                            <th scope="row">
+                                <label for="ddm_normal_pickup_cutoff_time"><?php esc_html_e('Normal Pickup Cutoff Time', 'delivery-dates-manager'); ?></label>
+                            </th>
+                            <td>
+                                <input type="time"
+                                       name="ddm_normal_pickup_cutoff_time"
+                                       id="ddm_normal_pickup_cutoff_time"
+                                       value="<?php echo esc_attr($normal_pickup_cutoff_time); ?>">
+                                <p class="description">
+                                    <?php esc_html_e('Cutoff for next-day (normal) pickup. Orders placed after this time cannot pick up tomorrow; the earliest pickup date moves to the day after.', 'delivery-dates-manager'); ?>
                                 </p>
                             </td>
                         </tr>
